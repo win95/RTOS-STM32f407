@@ -32,7 +32,7 @@ TM_ETHERNET_Result_t TM_ETHERNET_Init(uint8_t* mac_addr, uint8_t* ip_addr, uint8
 	TM_ETHERNET_Result_t result = TM_ETHERNET_Result_Ok;
 	
 	/* Initialize delay */
-	TM_DELAY_Init();
+//	TM_DELAY_Init();
 
 	/* Fill settings */
 	/* MAC address */

@@ -111,10 +111,14 @@ K		GND				Ground for back light
 @endverbatim
  */
 #include "stm32f4xx.h"
+#include "stm32f4xx_conf.h"
 #include "stm32f4xx_rcc.h"
 #include "stm32f4xx_gpio.h"
 #include "defines.h"
-#include "tm_stm32f4_delay.h"
+/* FreeRTOS.org includes. */
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "task.h"
 #include "tm_stm32f4_gpio.h"
 
 /**

@@ -5,7 +5,13 @@
 //******************************************************************************
 /* USER ...*/
 #include "defines.h"
+#include "tm_stm32f4_hd44780.h"
+#include "tm_stm32f4_gpio.h"
+#include "tm_stm32f4_usart.h"
+#include "attributes.h"
 #include "tm_stm32f4_delay.h"
+#include "tm_stm32f4_ethernet.h"
+#include "stm32f4xx_rcc.h"
 #include <stdio.h>
 #include <string.h>
 //******************************************************************************
@@ -20,13 +26,19 @@ void vLedBlinkRed(void *pvParameters);
 void vLedBlinkGreen(void *pvParameters);
 void vLedBlinkOrange(void *pvParameters);
 
-/* Create 2 callback functions for custom timers */
-void CustomTIMER1_Task(void* UserParameters);
-void CustomTIMER2_Task(void* UserParameters);
-
-/* Pointers to custom timers */
-TM_DELAY_Timer_t* CustomTimer1;
-TM_DELAY_Timer_t* CustomTimer2;
+/*Khoi LCD*/
+	uint8_t customChar[] = {
+		0x1F,	/*  xxx 11111 */
+		0x11,	/*  xxx 10001 */
+		0x11,	/*  xxx 10001 */
+		0x11,	/*  xxx 10001 */
+		0x11,	/*  xxx 10001 */
+		0x11,	/*  xxx 10001 */
+		0x11,	/*  xxx 10001 */
+		0x1F	/*  xxx 11111 */
+	};
+unsigned char flag_LCD = 0;
+char buffer_lcd[20];
 
 #define STACK_SIZE_MIN	128	/* usStackDepth	- the stack size DEFINED IN WORDS.*/
 
@@ -50,21 +62,13 @@ int main(void)
 	
 		/* Initialize system */
 	SystemInit();
-		/* Initialize delay */
-	TM_DELAY_Init();
-	
-		/* Init 2 custom timers */
-	/* Timer1 has reload value each 500ms, enabled auto reload feature and timer is enabled */
-	CustomTimer1 = TM_DELAY_TimerCreate(100, 1, 1, CustomTIMER1_Task, NULL);
-	
-	/* Timer1 has reload value each 70ms, enabled auto reload feature and timer is enabled */
-	CustomTimer2 = TM_DELAY_TimerCreate(200, 1, 1, CustomTIMER2_Task, NULL);
 	
 	STM_EVAL_LEDInit(LED_BLUE);
 	STM_EVAL_LEDInit(LED_GREEN);
 	STM_EVAL_LEDInit(LED_ORANGE);
 	STM_EVAL_LEDInit(LED_RED);
-	
+	TM_USART_Init(USART3, TM_USART_PinsPack_3, 9600);
+	TM_USART_Init(USART6, TM_USART_PinsPack_1, 9600);
 	xTaskCreate( vLedBlinkBlue, (const signed char*)"Led Blink Task Blue", 
 		STACK_SIZE_MIN, NULL, tskIDLE_PRIORITY, NULL );
 	xTaskCreate( vLedBlinkRed, (const signed char*)"Led Blink Task Red", 
@@ -108,25 +112,32 @@ void vLedBlinkGreen(void *pvParameters)
 
 void vLedBlinkOrange(void *pvParameters)
 {
+		/* Init LCD*/
+		
+		TM_GPIO_Init(HD44780_RW_PORT, HD44780_RW_PIN, TM_GPIO_Mode_OUT, TM_GPIO_OType_PP, TM_GPIO_PuPd_NOPULL, TM_GPIO_Speed_High);
+		TM_GPIO_SetPinLow(HD44780_RW_PORT,HD44780_RW_PIN);
+    TM_HD44780_Init(16, 4);
+    //Save custom character on location 0 in LCD
+    TM_HD44780_CreateChar(0, &customChar[0]);
+    //Put string to LCD
+    TM_HD44780_Puts(0, 0, "STM32F407VET\n\rCreartbyR&D-TIS\n\rRTOSTEST"); /* 0 dong 1, 1 dong 2*/
 	for(;;)
 	{
+
 		STM_EVAL_LEDToggle(LED_ORANGE);
-		vTaskDelay(5000 / portTICK_RATE_MS );
-		//STM_EVAL_LEDOn(LED_ORANGE);
+		TM_USART_Puts(USART3, "WelcomLCD");
+		vTaskDelay(500 / portTICK_RATE_MS );
 	}
 }
 //******************************************************************************
 /* Tran duc code*/
-/* Called when Custom TIMER1 reaches zero */
-void CustomTIMER1_Task(void* UserParameters) {
-	/* Toggle GREEN led */
-	STM_EVAL_LEDOff(LED_ORANGE);
+void TM_USART3_ReceiveHandler(uint8_t c) {	 // com 2
+	
+	TM_USART_Puts(USART3, "Ngat nhan uart3");
 }
-
-/* Called when Custom TIMER2 reaches zero */
-void CustomTIMER2_Task(void* UserParameters) {
-	/* Toggle RED led */
-	STM_EVAL_LEDOn(LED_ORANGE);
+void TM_USART6_ReceiveHandler(uint8_t c) {	 // com 2
+	
+	TM_USART_Puts(USART6, "Ngat nhan uart6");
 }
 
 /* End code*/

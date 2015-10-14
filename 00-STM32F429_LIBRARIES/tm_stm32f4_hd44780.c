@@ -16,6 +16,7 @@
  * | along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * |----------------------------------------------------------------------
  */
+#include "stm32f4xx_conf.h"
 #include "tm_stm32f4_hd44780.h"
 
 /* Private HD44780 structure */
@@ -45,8 +46,8 @@ static HD44780_Options_t HD44780_Opts;
 #define HD44780_E_LOW               TM_GPIO_SetPinLow(HD44780_E_PORT, HD44780_E_PIN)
 #define HD44780_E_HIGH              TM_GPIO_SetPinHigh(HD44780_E_PORT, HD44780_E_PIN)
 
-#define HD44780_E_BLINK             HD44780_E_HIGH; HD44780_Delay(20); HD44780_E_LOW; HD44780_Delay(20)
-#define HD44780_Delay(x)            Delay(x)
+#define HD44780_E_BLINK             HD44780_E_HIGH;vTaskDelay(1);; HD44780_E_LOW; vTaskDelay(1);
+#define HD44780_Delay(x)            vTaskDelay(x)
 
 /* Commands*/
 #define HD44780_CLEARDISPLAY        0x01
@@ -85,13 +86,13 @@ static HD44780_Options_t HD44780_Opts;
 
 void TM_HD44780_Init(uint8_t cols, uint8_t rows) {
 	/* Initialize delay */
-	TM_DELAY_Init();
+//	TM_DELAY_Init();
 	
 	/* Init pinout */
 	TM_HD44780_InitPins();
 	
 	/* At least 40ms */
-	HD44780_Delay(45000);
+	vTaskDelay(40);
 	
 	/* Set LCD width and height */
 	HD44780_Opts.Rows = rows;
@@ -108,19 +109,19 @@ void TM_HD44780_Init(uint8_t cols, uint8_t rows) {
 	
 	/* Try to set 4bit mode */
 	TM_HD44780_Cmd4bit(0x03);
-	HD44780_Delay(4500);
+	vTaskDelay(40);
 	
 	/* Second try */
 	TM_HD44780_Cmd4bit(0x03);
-	HD44780_Delay(4500);
+	vTaskDelay(40);
 	
 	/* Third goo! */
 	TM_HD44780_Cmd4bit(0x03);
-	HD44780_Delay(4500);	
+	vTaskDelay(40);	
 	
 	/* Set 4-bit interface */
 	TM_HD44780_Cmd4bit(0x02);
-	HD44780_Delay(100);
+	vTaskDelay(2);
 	
 	/* Set # lines, font size, etc. */
 	TM_HD44780_Cmd(HD44780_FUNCTIONSET | HD44780_Opts.DisplayFunction);
@@ -137,12 +138,12 @@ void TM_HD44780_Init(uint8_t cols, uint8_t rows) {
 	TM_HD44780_Cmd(HD44780_ENTRYMODESET | HD44780_Opts.DisplayMode);
 
 	/* Delay */
-	HD44780_Delay(4500);
+	vTaskDelay(40);
 }
 
 void TM_HD44780_Clear(void) {
 	TM_HD44780_Cmd(HD44780_CLEARDISPLAY);
-	HD44780_Delay(3000);
+	vTaskDelay(30);
 }
 
 void TM_HD44780_Puts(uint8_t x, uint8_t y, char* str) {

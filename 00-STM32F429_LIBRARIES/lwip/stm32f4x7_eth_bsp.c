@@ -65,7 +65,7 @@ static void ETH_MACDMA_Config(void);
   */
 uint8_t ETH_BSP_Config(void) {	
 	/* Initialize delay */
-	TM_DELAY_Init();
+//	TM_DELAY_Init();
 	
 	/* Configure the GPIO ports for ethernet pins */
 	ETH_GPIO_Config();
