@@ -150,7 +150,7 @@ typedef portBASE_TYPE (*pdTASK_HOOK_CODE)( void * );
 #endif
 
 #ifndef INCLUDE_xTimerGetTimerDaemonTaskHandle
-	#define INCLUDE_xTimerGetTimerDaemonTaskHandle 1
+	#define INCLUDE_xTimerGetTimerDaemonTaskHandle 0
 #endif
 
 #ifndef INCLUDE_xQueueGetMutexHolder
@@ -186,7 +186,7 @@ typedef portBASE_TYPE (*pdTASK_HOOK_CODE)( void * );
 #endif
 
 #ifndef configUSE_TIMERS
-	#define configUSE_TIMERS 1
+	#define configUSE_TIMERS 0
 #endif
 
 #ifndef configUSE_COUNTING_SEMAPHORES

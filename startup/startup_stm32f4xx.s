@@ -1,9 +1,9 @@
-;******************** (C) COPYRIGHT 2012 STMicroelectronics ********************
-;* File Name          : startup_stm32f4xx.s
+;******************** (C) COPYRIGHT 2015 STMicroelectronics ********************
+;* File Name          : startup_stm32f40_41xxx.s
 ;* Author             : MCD Application Team
-;* Version            : V1.0.2
-;* Date               : 05-March-2012
-;* Description        : STM32F4xx devices vector table for MDK-ARM toolchain. 
+;* @version           : V1.5.0
+;* @date              : 06-March-2015
+;* Description        : STM32F40xxx/41xxx devices vector table for MDK-ARM toolchain. 
 ;*                      This module performs:
 ;*                      - Set the initial SP
 ;*                      - Set the initial PC == Reset_Handler
@@ -166,7 +166,7 @@ __Vectors       DCD     __initial_sp               ; Top of Stack
                 DCD     CRYP_IRQHandler                   ; CRYP crypto                                     
                 DCD     HASH_RNG_IRQHandler               ; Hash and Rng
                 DCD     FPU_IRQHandler                    ; FPU
-                         
+                                         
 __Vectors_End
 
 __Vectors_Size  EQU  __Vectors_End - __Vectors
@@ -312,7 +312,7 @@ Default_Handler PROC
                 EXPORT  DCMI_IRQHandler                   [WEAK]                                             
                 EXPORT  CRYP_IRQHandler                   [WEAK]                                     
                 EXPORT  HASH_RNG_IRQHandler               [WEAK]
-                EXPORT  FPU_IRQHandler                    [WEAK]                
+                EXPORT  FPU_IRQHandler                    [WEAK]
 
 WWDG_IRQHandler                                                       
 PVD_IRQHandler                                      
@@ -395,8 +395,8 @@ OTG_HS_IRQHandler
 DCMI_IRQHandler                                                            
 CRYP_IRQHandler                                                    
 HASH_RNG_IRQHandler
-FPU_IRQHandler                                                 
-
+FPU_IRQHandler
+   
                 B       .
 
                 ENDP

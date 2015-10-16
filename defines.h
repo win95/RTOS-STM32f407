@@ -28,14 +28,66 @@
 #ifndef TM_DEFINES_H
 #define TM_DEFINES_H
 
+//#define configUSE_TIMERS  1
 #define TM_USART1_USE_CUSTOM_IRQ
 #define TM_USART3_USE_CUSTOM_IRQ
 #define TM_USART6_USE_CUSTOM_IRQ
-///* If you need to change settings for your SPI, then uncomment lines you want to change */
-///* Replace x with SPI number, 1 - 6 */
-//#define FATFS_USE_SDIO	1
-///* Enable Card detect pin */
-//#define FATFS_USE_DETECT_PIN 0
+/* Put your global defines for all libraries here used in your project */
+/*
+ * 0: DP83848
+ * 1: LAN8720A
+ * 2: KSZ8081RNA
+ */
+///* If you want to use LAN8720A PHY, do this in defines.h file: */
+//#define ETHERNET_PHY	0
+///* MAC ADDRESS: MAC_ADDR0:MAC_ADDR1:MAC_ADDR2:MAC_ADDR3:MAC_ADDR4:MAC_ADDR5 */
+///* In case you want to use custom MAC, use parameter in init function */
+
+#define ETHERNET_PHY 0
+
+#define LINK_TIMER_INTERVAL 1000
+
+#ifndef MAC_ADDR0
+#define MAC_ADDR0							0x08
+#define MAC_ADDR1							0x00
+#define MAC_ADDR2							0x69
+#define MAC_ADDR3							0x02
+#define MAC_ADDR4							0x01
+#define MAC_ADDR5							0xFC
+#endif
+
+///* Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
+///* Used in case DHCP is not used or response failed */
+///* In case you want to use custom IP, use parameter in init function */
+#ifndef IP_ADDR0
+#define IP_ADDR0							192
+#define IP_ADDR1							168
+#define IP_ADDR2							0
+#define IP_ADDR3							120
+#endif
+
+/* NETMASK */
+/* In case you want to use custom netmask, use parameter in init function */
+#ifndef NETMASK_ADDR0
+#define NETMASK_ADDR0						255
+#define NETMASK_ADDR1						255
+#define NETMASK_ADDR2						255
+#define NETMASK_ADDR3						0
+#endif
+
+/* Gateway Address */
+/* In case you want to use custom gateway, use parameter in init function */
+#ifndef GW_ADDR0
+#define GW_ADDR0							192
+#define GW_ADDR1							168
+#define GW_ADDR2							0
+#define GW_ADDR3							100
+#endif
+/* If you need to change settings for your SPI, then uncomment lines you want to change */
+/* Replace x with SPI number, 1 - 6 */
+#define FATFS_USE_SDIO	1
+/* Enable Card detect pin */
+#define FATFS_USE_DETECT_PIN 0
 
 ///* define DTMF*/
 
@@ -51,24 +103,24 @@
 //#define DFMF_BIT4_PORT 				GPIOA
 //#define DTMF_BIT4_PIN					GPIO_PIN_0
 
-///* define Sw*/
+/* define Sw*/
 
-//#define ADD_BIT0_PORT					GPIOD
-//#define ADD_BIT0_PIN					GPIO_PIN_0
-//#define ADD_BIT1_PORT					GPIOD
-//#define ADD_BIT1_PIN					GPIO_PIN_1
-//#define ADD_BIT2_PORT					GPIOD
-//#define ADD_BIT2_PIN 					GPIO_PIN_4
-//#define ADD_BIT3_PORT					GPIOB
-//#define ADD_BIT3_PIN 					GPIO_PIN_5
-//#define ADD_BIT4_PORT					GPIOB
-//#define ADD_BIT4_PIN 					GPIO_PIN_6
-//#define ADD_BIT5_PORT					GPIOB
-//#define ADD_BIT5_PIN 					GPIO_PIN_7
-//#define ADD_BIT6_PORT					GPIOB
-//#define ADD_BIT6_PIN 					GPIO_PIN_8
-//#define ADD_BIT7_PORT					GPIOA
-//#define ADD_BIT7_PIN 					GPIO_PIN_12
+#define ADD_BIT0_PORT					GPIOD
+#define ADD_BIT0_PIN					GPIO_PIN_0
+#define ADD_BIT1_PORT					GPIOD
+#define ADD_BIT1_PIN					GPIO_PIN_1
+#define ADD_BIT2_PORT					GPIOD
+#define ADD_BIT2_PIN 					GPIO_PIN_4
+#define ADD_BIT3_PORT					GPIOB
+#define ADD_BIT3_PIN 					GPIO_PIN_5
+#define ADD_BIT4_PORT					GPIOB
+#define ADD_BIT4_PIN 					GPIO_PIN_6
+#define ADD_BIT5_PORT					GPIOB
+#define ADD_BIT5_PIN 					GPIO_PIN_7
+#define ADD_BIT6_PORT					GPIOB
+#define ADD_BIT6_PIN 					GPIO_PIN_8
+#define ADD_BIT7_PORT					GPIOA
+#define ADD_BIT7_PIN 					GPIO_PIN_12
 
 ///* define RELAY OUTPUT*/
 //#define RELAY_DK1_PORT				GPIOC
@@ -82,19 +134,18 @@
 ///* define Buzzer */
 //#define BUZZER_PORT						GPIOB
 //#define BUZZER_PIN						GPIO_PIN_9
-///* defile weigand INPUT*/
-//#define W1_D0_PORT 						GPIOA
-//#define W1_D0_PIN							GPIO_PIN_3
-//#define W1_D1_PORT 						GPIOA
-//#define W1_D1_PIN							GPIO_PIN_4
-//#define W2_D0_PORT 						GPIOA
-//#define W2_D0_PIN							GPIO_PIN_5
-//#define W2_D1_PORT 						GPIOA
-//#define W2_D1_PIN							GPIO_PIN_6
+#define W1_D0_PORT 						GPIOA
+#define W1_D0_PIN							GPIO_PIN_3
+#define W1_D1_PORT 						GPIOA
+#define W1_D1_PIN							GPIO_PIN_4
+#define W2_D0_PORT 						GPIOA
+#define W2_D0_PIN							GPIO_PIN_6
+#define W2_D1_PORT 						GPIOA
+#define W2_D1_PIN							GPIO_PIN_8
 
-///*define 485 DIR*/
-//#define CCU_DIR_PORT 					GPIOA
-//#define CCU_DIR_PIN						GPIO_PIN_11
+/*define 485 DIR*/
+#define CCU_DIR_PORT 					GPIOA
+#define CCU_DIR_PIN						GPIO_PIN_11
 
 /* Control pins */
 /* RS - Register select pin */
@@ -120,13 +171,8 @@
 #define HD44780_D7_PORT			GPIOE
 #define HD44780_D7_PIN			GPIO_Pin_7
 
-///* Overwrite default CARD DETECT pin */		
-//#define FATS_DETECT_PORT         GPIOB
-//#define FATFS_DETECT_PIN          GPIO_PIN_6
-/* Use detect pin */
-//#define FATFS_USE_DETECT_PIN			1
 /* Use writeprotect pin */
-//#define FATFS_USE_WRITEPROTECT_PIN		0
+#define FATFS_USE_WRITEPROTECT_PIN		0
 
 
 
