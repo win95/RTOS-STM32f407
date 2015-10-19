@@ -62,7 +62,7 @@
 #ifndef IP_ADDR0
 #define IP_ADDR0							192
 #define IP_ADDR1							168
-#define IP_ADDR2							0
+#define IP_ADDR2							1
 #define IP_ADDR3							120
 #endif
 
@@ -80,15 +80,18 @@
 #ifndef GW_ADDR0
 #define GW_ADDR0							192
 #define GW_ADDR1							168
-#define GW_ADDR2							0
-#define GW_ADDR3							100
+#define GW_ADDR2							1
+#define GW_ADDR3							1
 #endif
 /* If you need to change settings for your SPI, then uncomment lines you want to change */
 /* Replace x with SPI number, 1 - 6 */
 #define FATFS_USE_SDIO	1
+/* Activate SDIO 1-bit mode */
+#define FATFS_SDIO_4BIT 		0
 /* Enable Card detect pin */
-#define FATFS_USE_DETECT_PIN 0
-
+//#define FATFS_USE_DETECT_PIN 0
+///* Use writeprotect pin */
+//#define FATFS_USE_WRITEPROTECT_PIN		0
 ///* define DTMF*/
 
 //#define DTMF_BIT0_PORT				GPIOD
@@ -171,8 +174,7 @@
 #define HD44780_D7_PORT			GPIOE
 #define HD44780_D7_PIN			GPIO_Pin_7
 
-/* Use writeprotect pin */
-#define FATFS_USE_WRITEPROTECT_PIN		0
+
 
 
 

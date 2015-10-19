@@ -16,7 +16,7 @@
 #include "tm_stm32f4_fatfs.h"
 #include "stm32f4xx_rcc.h"
 #include <stdio.h>
-//#include <stdlib.h>
+#include <stdlib.h>
 #include <string.h>
 //******************************************************************************
 #include "FreeRTOS.h"
@@ -68,10 +68,17 @@ uint16_t requests_count = 1;
 
 const signed char timer_xx[] = "Timer";
 
+/* Fatfs object */
+FATFS FatFs;
+/* File object */
+FIL fil;
+
 //******************************************************************************
 int main(void)
-{
+{	
 		long x=0;
+			/* Free and total space */
+	uint32_t total, free;
       // the scheduler starts.
       for( x = 0; x <= 2; x++ )
       {
@@ -120,6 +127,31 @@ int main(void)
 //		/* Report to user */
 //		//printf("Reset occured because of Watchdog\n");
 //	}
+
+//		/* Try to open file */
+//		if (f_open(&fil, "2stfile.txt", FA_CREATE_ALWAYS | FA_READ | FA_WRITE) == FR_OK) {
+////			if (f_open(&fil, "stfile.txt", FA_CREATE_ALWAYS | FA_READ | FA_WRITE) == FR_OK) {
+//			/* File opened, turn off RED and turn on GREEN led */
+//			//TM_DISCO_LedOn(LED_GREEN);
+//			//TM_DISCO_LedOff(LED_RED);
+//			
+//			/* If we put more than 0 characters (everything OK) */
+//			if (f_puts("First string in my file RTOS\n", &fil) > 0) {
+//				if (TM_FATFS_DriveSize(&total, &free) == FR_OK) {
+//					/* Data for drive size are valid */
+//				}
+//				
+//				/* Turn on both leds */
+//				//TM_DISCO_LedOn(LED_GREEN | LED_RED);
+//			}
+//			
+//			/* Close file, don't forget this! */
+//			f_close(&fil);
+//		}
+//		
+//		/* Unmount drive, don't forget this! */
+//		f_mount(0, "0:", 1);
+//	}
 		/*init interrup INPUT*/
 		if (TM_EXTI_Attach(W1_D0_PORT, W1_D0_PIN, TM_EXTI_Trigger_Rising) == TM_EXTI_Result_Ok) {
 		//TM_USART_Puts(USART3, "khoi tao ngat W1_D0\n");
@@ -133,6 +165,7 @@ int main(void)
 	STM_EVAL_LEDInit(LED_RED);
 	TM_USART_Init(USART3, TM_USART_PinsPack_3, 115200);
 	TM_USART_Init(USART6, TM_USART_PinsPack_1, 9600);
+
 	xTaskCreate( vLedBlinkBlue, (const signed char*)"Led Blink Task Blue", 
 		STACK_SIZE_MIN, NULL, tskIDLE_PRIORITY, NULL );
 	xTaskCreate( vLedBlinkRed, (const signed char*)"Led Blink Task Red", 
@@ -141,13 +174,18 @@ int main(void)
 		STACK_SIZE_MIN, NULL, tskIDLE_PRIORITY, NULL );
 	xTaskCreate( vLedBlinkOrange, (const signed char*)"Led Blink Task Orange", 
 		STACK_SIZE_MIN, NULL, tskIDLE_PRIORITY, NULL );
-	
+
 	vTaskStartScheduler();
 }
 //******************************************************************************
 //******************************************************************************
 void vLedBlinkBlue(void *pvParameters)
 {
+							/* Mount drive */
+//	if (f_mount(&FatFs,"SD:", 1) == FR_OK) {
+//		/* Mounted OK, turn on RED LED */
+//		//TM_USART_Puts(USART3, "mount sd OK \n");
+//	}
 	for(;;)
 	{
 		STM_EVAL_LEDToggle(LED_BLUE);
@@ -159,8 +197,10 @@ void vLedBlinkRed(void *pvParameters)
 {
 	for(;;)
 	{
-		STM_EVAL_LEDToggle(LED_RED);
-		vTaskDelay( 750 / portTICK_RATE_MS );
+		//STM_EVAL_LEDToggle(LED_RED);
+				/* Try to make a new connection, port 80 */
+
+		vTaskDelay( 4000 / portTICK_RATE_MS );
 	}
 }
 
@@ -171,12 +211,7 @@ void vLedBlinkGreen(void *pvParameters)
 	//TM_USART_Puts(USART3, "TM_ETHERNET_Init OK \n");
 	//printf("TM_ETHERNET_Init OK \n");
 	}
-		/* Try to make a new connection, port 80 */
-	if (TM_ETHERNETCLIENT_Connect("192.168.0.100", 192, 168, 0, 100, 5555, &requests_count) != TM_ETHERNET_Result_Ok) {
-		/* Print to user */
-		sprintf(str,"Can not make a new connection!\n");
-		TM_USART_Puts(USART3,str);
-	}
+
 		/* Reset watchdog */
 	//TM_WATCHDOG_Reset();
 	for(;;)
@@ -218,7 +253,7 @@ void vLedBlinkOrange(void *pvParameters)
 	{
 		STM_EVAL_LEDToggle(LED_ORANGE);
 		//TM_USART_Puts(USART3, "WelcomLCD");
-		vTaskDelay(500 / portTICK_RATE_MS );
+		vTaskDelay(50 / portTICK_RATE_MS );
 	}
 	
 }
@@ -234,7 +269,11 @@ void vLedBlinkOrange(void *pvParameters)
 //******************************************************************************
 /* Tran duc code*/
 void TM_USART3_ReceiveHandler(uint8_t c) {	 // com 2
-	
+		if (TM_ETHERNETCLIENT_Connect("192.168.1.250",192,168,1,250,8081,"./index.txt") != TM_ETHERNET_Result_Ok) { //&requests_count
+		/* Print to user */
+		sprintf(str,"Can not make a new connection!\n");
+		TM_USART_Puts(USART3,str);
+	}
 	TM_USART_Puts(USART3, "Ngat nhan uart3");
 }
 void TM_USART6_ReceiveHandler(uint8_t c) {	 // com 2
@@ -245,8 +284,8 @@ void TM_USART6_ReceiveHandler(uint8_t c) {	 // com 2
 
 uint16_t TM_ETHERNETCLIENT_CreateHeadersCallback(TM_TCPCLIENT_t* connection, char* buffer, uint16_t buffer_length) {
 	/* Create request headers */
-	sprintf(buffer, "GET /hello_world.php?number=%d HTTP/1.1\r\n", *(uint16_t *)connection->user_parameters);
-	strcat(buffer, "Host: stm32f4-discovery.com\r\n");
+	sprintf(buffer, "GET /index.txt?number=%d HTTP/1.1\r\n", *(uint16_t *)connection->user_parameters);
+	//strcat(buffer, "Host: stm32f4-discovery.com\r\n");
 	strcat(buffer, "Connection: close\r\n");
 	strcat(buffer, "\r\n");
 	
@@ -470,7 +509,7 @@ void vTimerCallback( xTimerHandle  pxTimer )
  {
 	long lArrayIndex;
 	const long xMaxExpiryCountBeforeStopping = 10;
-	TM_USART_Puts(USART3, "timer");
+	//TM_USART_Puts(USART3, "timer");
      /* Optionally do something if the pxTimer parameter is NULL. */
      configASSERT( pxTimer );
 

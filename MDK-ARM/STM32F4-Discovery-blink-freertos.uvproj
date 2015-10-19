@@ -363,7 +363,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F4XX,HSE_VALUE=8000000</Define>
               <Undefine></Undefine>
-              <IncludePath>..\;..\CMSIS\Include;..\CMSIS\STM32F4xx\Include;..\STM32F4_Discovery;..\STM32F4xx_StdPeriph_Driver\inc;..\startup;..\FreeRTOS\Source\include;..\FreeRTOS\Source\portable\RVDS\ARM_CM4F;..\FreeRTOS;..\00-STM32F429_LIBRARIES;..\00-STM32F429_LIBRARIES\lwip;..\00-STM32F429_LIBRARIES\lwip\port;..\00-STM32F429_LIBRARIES\lwip\src\include\ipv4;..\00-STM32F429_LIBRARIES\lwip\src\include\netif;..\00-STM32F429_LIBRARIES\lwip\src\include\lwip;..\00-STM32F429_LIBRARIES\lwip\src\include;..\FreeRTOS\Source</IncludePath>
+              <IncludePath>..\;..\CMSIS\Include;..\CMSIS\STM32F4xx\Include;..\STM32F4_Discovery;..\STM32F4xx_StdPeriph_Driver\inc;..\startup;..\FreeRTOS\Source\include;..\FreeRTOS\Source\portable\RVDS\ARM_CM4F;..\FreeRTOS;..\00-STM32F429_LIBRARIES;..\00-STM32F429_LIBRARIES\lwip;..\00-STM32F429_LIBRARIES\lwip\port;..\00-STM32F429_LIBRARIES\lwip\src\include\ipv4;..\00-STM32F429_LIBRARIES\lwip\src\include\netif;..\00-STM32F429_LIBRARIES\lwip\src\include\lwip;..\00-STM32F429_LIBRARIES\lwip\src\include;..\FreeRTOS\Source;..\00-STM32F429_LIBRARIES\fatfs;..\00-STM32F429_LIBRARIES\fatfs\drivers;..\00-STM32F429_LIBRARIES\fatfs\option</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -465,6 +465,16 @@
               <FileName>stm32f4xx_usart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\STM32F4xx_StdPeriph_Driver\src\stm32f4xx_usart.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f4xx_dma.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\STM32F4xx_StdPeriph_Driver\src\stm32f4xx_dma.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f4xx_sdio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\STM32F4xx_StdPeriph_Driver\src\stm32f4xx_sdio.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -627,11 +637,6 @@
           <GroupName>TM</GroupName>
           <Files>
             <File>
-              <FileName>tm_stm32f4_hd44780.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_hd44780.h</FilePath>
-            </File>
-            <File>
               <FileName>tm_stm32f4_hd44780.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_hd44780.c</FilePath>
@@ -640,16 +645,6 @@
               <FileName>tm_stm32f4_gpio.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_gpio.c</FilePath>
-            </File>
-            <File>
-              <FileName>tm_stm32f4_gpio.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_gpio.h</FilePath>
-            </File>
-            <File>
-              <FileName>tm_stm32f4_usart.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_usart.h</FilePath>
             </File>
             <File>
               <FileName>tm_stm32f4_usart.c</FileName>
@@ -662,19 +657,9 @@
               <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_ethernet.c</FilePath>
             </File>
             <File>
-              <FileName>tm_stm32f4_ethernet.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_ethernet.h</FilePath>
-            </File>
-            <File>
               <FileName>tm_stm32f4_rcc.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_rcc.c</FilePath>
-            </File>
-            <File>
-              <FileName>tm_stm32f4_rcc.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_rcc.h</FilePath>
             </File>
             <File>
               <FileName>tm_stm32f4_delay.c</FileName>
@@ -682,19 +667,19 @@
               <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_delay.c</FilePath>
             </File>
             <File>
-              <FileName>tm_stm32f4_delay.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_delay.h</FilePath>
-            </File>
-            <File>
               <FileName>tm_stm32f4_watchdog.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_watchdog.c</FilePath>
             </File>
             <File>
-              <FileName>tm_stm32f4_watchdog.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_watchdog.h</FilePath>
+              <FileName>tm_stm32f4_exti.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>tm_stm32f4_fatfs.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\00-STM32F429_LIBRARIES\tm_stm32f4_fatfs.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -950,6 +935,61 @@
               <FileName>httpd_structs.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\00-STM32F429_LIBRARIES\lwip\httpd_structs.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>FatFs</GroupName>
+          <Files>
+            <File>
+              <FileName>diskio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\00-STM32F429_LIBRARIES\fatfs\diskio.c</FilePath>
+            </File>
+            <File>
+              <FileName>diskio.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\00-STM32F429_LIBRARIES\fatfs\diskio.h</FilePath>
+            </File>
+            <File>
+              <FileName>ff.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\00-STM32F429_LIBRARIES\fatfs\ff.c</FilePath>
+            </File>
+            <File>
+              <FileName>ff.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\00-STM32F429_LIBRARIES\fatfs\ff.h</FilePath>
+            </File>
+            <File>
+              <FileName>ffconf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\00-STM32F429_LIBRARIES\fatfs\ffconf.h</FilePath>
+            </File>
+            <File>
+              <FileName>integer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\00-STM32F429_LIBRARIES\fatfs\integer.h</FilePath>
+            </File>
+            <File>
+              <FileName>syscall.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\00-STM32F429_LIBRARIES\fatfs\option\syscall.c</FilePath>
+            </File>
+            <File>
+              <FileName>unicode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\00-STM32F429_LIBRARIES\fatfs\option\unicode.c</FilePath>
+            </File>
+            <File>
+              <FileName>fatfs_sd_sdio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\00-STM32F429_LIBRARIES\fatfs\drivers\fatfs_sd_sdio.c</FilePath>
+            </File>
+            <File>
+              <FileName>fatfs_sd_sdio.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\00-STM32F429_LIBRARIES\fatfs\drivers\fatfs_sd_sdio.h</FilePath>
             </File>
           </Files>
         </Group>
