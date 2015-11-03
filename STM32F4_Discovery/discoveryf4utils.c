@@ -28,48 +28,6 @@
 #include "stm32f4xx_conf.h"
 #include "discoveryf4utils.h"
 
-
-/** @addtogroup Utilities
-  * @{
-  */ 
-
-/** @addtogroup STM32F4_DISCOVERY
-  * @{
-  */   
-    
-/** @defgroup STM32F4_DISCOVERY_LOW_LEVEL 
-  * @brief This file provides set of firmware functions to manage Leds and push-button
-  *        available on STM32F4-Discovery Kit from STMicroelectronics.
-  * @{
-  */ 
-
-/** @defgroup STM32F4_DISCOVERY_LOW_LEVEL_Private_TypesDefinitions
-  * @{
-  */ 
-/**
-  * @}
-  */ 
-
-
-/** @defgroup STM32F4_DISCOVERY_LOW_LEVEL_Private_Defines
-  * @{
-  */ 
-/**
-  * @}
-  */ 
-
-
-/** @defgroup STM32F4_DISCOVERY_LOW_LEVEL_Private_Macros
-  * @{
-  */ 
-/**
-  * @}
-  */ 
-
-
-/** @defgroup STM32F4_DISCOVERY_LOW_LEVEL_Private_Variables
-  * @{
-  */ 
 GPIO_TypeDef* GPIO_PORT[LEDn] = {LED_GREEN_GPIO_PORT, LED_BLUE_GPIO_PORT, LED_RED_GPIO_PORT,
                                  LED_ORANGE_GPIO_PORT};
 const uint16_t GPIO_PIN[LEDn] = {LED_GREEN_PIN, LED_BLUE_PIN, LED_RED_PIN,
@@ -92,33 +50,6 @@ const uint8_t BUTTON_IRQn[BUTTONn] = {USER_BUTTON_EXTI_IRQn };
 
 NVIC_InitTypeDef   NVIC_InitStructure;
 
-/**
-  * @}
-  */ 
-
-
-/** @defgroup STM32F4_DISCOVERY_LOW_LEVEL_Private_FunctionPrototypes
-  * @{
-  */ 
-
-/**
-  * @}
-  */ 
-
-/** @defgroup STM32F4_DISCOVERY_LOW_LEVEL_Private_Functions
-  * @{
-  */ 
-
-/**
-  * @brief  Configures LED GPIO.
-  * @param  Led: Specifies the Led to be configured. 
-  *   This parameter can be one of following parameters:
-  *     @arg LED4
-  *     @arg LED3
-  *     @arg LED5
-  *     @arg LED6
-  * @retval None
-  */
 void STM_EVAL_LEDInit(Led_TypeDef Led)
 {
   GPIO_InitTypeDef  GPIO_InitStructure;

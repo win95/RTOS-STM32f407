@@ -56,9 +56,9 @@
 #define MAC_ADDR5							0xFC
 #endif
 
-///* Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
-///* Used in case DHCP is not used or response failed */
-///* In case you want to use custom IP, use parameter in init function */
+/* Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
+/* Used in case DHCP is not used or response failed */
+/* In case you want to use custom IP, use parameter in init function */
 #ifndef IP_ADDR0
 #define IP_ADDR0							192
 #define IP_ADDR1							168
@@ -87,24 +87,24 @@
 /* Replace x with SPI number, 1 - 6 */
 #define FATFS_USE_SDIO	1
 /* Activate SDIO 1-bit mode */
-#define FATFS_SDIO_4BIT 		0
+#define FATFS_SDIO_4BIT 		1
 /* Enable Card detect pin */
 //#define FATFS_USE_DETECT_PIN 0
-///* Use writeprotect pin */
+/* Use writeprotect pin */
 //#define FATFS_USE_WRITEPROTECT_PIN		0
-///* define DTMF*/
+/* define DTMF*/
 
-//#define DTMF_BIT0_PORT				GPIOD
-//#define DTMF_BIT0_PIN					GPIO_PIN_15
-//#define DTMF_BIT1_PORT				GPIOD
-//#define DTMF_BIT1_PIN					GPIO_PIN_5
-//#define DTMF_BIT2_PORT				GPIOD
-//#define DTMF_BIT2_PIN					GPIO_PIN_6
-//#define DTMF_BIT3_PORT				GPIOD
-//#define DTMF_BIT3_PIN					GPIO_PIN_7
+#define DTMF_BIT0_PORT				GPIOD
+#define DTMF_BIT0_PIN					GPIO_PIN_15
+#define DTMF_BIT1_PORT				GPIOD
+#define DTMF_BIT1_PIN					GPIO_PIN_5
+#define DTMF_BIT2_PORT				GPIOD
+#define DTMF_BIT2_PIN					GPIO_PIN_6
+#define DTMF_BIT3_PORT				GPIOD
+#define DTMF_BIT3_PIN					GPIO_PIN_7
 
-//#define DFMF_BIT4_PORT 				GPIOA
-//#define DTMF_BIT4_PIN					GPIO_PIN_0
+#define DFMF_BIT4_PORT 				GPIOA
+#define DTMF_BIT4_PIN					GPIO_PIN_0
 
 /* define Sw*/
 
@@ -125,18 +125,19 @@
 #define ADD_BIT7_PORT					GPIOA
 #define ADD_BIT7_PIN 					GPIO_PIN_12
 
-///* define RELAY OUTPUT*/
-//#define RELAY_DK1_PORT				GPIOC
-//#define RELAY_DK1_PIN					GPIO_PIN_0
-//#define RELAY_DK2_PORT				GPIOC
-//#define RELAY_DK2_PIN					GPIO_PIN_2
-//#define RELAY_DK3_PORT				GPIOB
-//#define RELAY_DK3_PIN					GPIO_PIN_10
-//#define RELAY_DK4_PORT				GPIOB
-//#define RELAY_DK4_PIN					GPIO_PIN_14
+/* define RELAY OUTPUT*/
+#define RELAY_DK1_PORT				GPIOC
+#define RELAY_DK1_PIN					GPIO_PIN_2
+#define RELAY_DK2_PORT				GPIOC
+#define RELAY_DK2_PIN					GPIO_PIN_0
+#define RELAY_DK3_PORT				GPIOD
+#define RELAY_DK3_PIN					GPIO_PIN_10
+#define RELAY_DK4_PORT				GPIOD
+#define RELAY_DK4_PIN					GPIO_PIN_11
 ///* define Buzzer */
-//#define BUZZER_PORT						GPIOB
-//#define BUZZER_PIN						GPIO_PIN_9
+#define BUZZER_PORT						GPIOB
+#define BUZZER_PIN						GPIO_PIN_9
+
 #define W1_D0_PORT 						GPIOA
 #define W1_D0_PIN							GPIO_PIN_3
 #define W1_D1_PORT 						GPIOA
@@ -173,9 +174,5 @@
 /* D7 - Data 7 pin */
 #define HD44780_D7_PORT			GPIOE
 #define HD44780_D7_PIN			GPIO_Pin_7
-
-
-
-
 
 #endif
