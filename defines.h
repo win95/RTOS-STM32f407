@@ -52,7 +52,7 @@
 #define MAC_ADDR1							0x00
 #define MAC_ADDR2							0x69
 #define MAC_ADDR3							0x02
-#define MAC_ADDR4							0x01
+#define MAC_ADDR4							0x00
 #define MAC_ADDR5							0xFC
 #endif
 
@@ -93,7 +93,7 @@
 /* Use writeprotect pin */
 //#define FATFS_USE_WRITEPROTECT_PIN		0
 /* define DTMF*/
-
+#ifndef DTMF_BIT0_PORT
 #define DTMF_BIT0_PORT				GPIOD
 #define DTMF_BIT0_PIN					GPIO_PIN_15
 #define DTMF_BIT1_PORT				GPIOD
@@ -105,9 +105,9 @@
 
 #define DFMF_BIT4_PORT 				GPIOA
 #define DTMF_BIT4_PIN					GPIO_PIN_0
-
+#endif
 /* define Sw*/
-
+#ifndef ADD_BIT0_PORT
 #define ADD_BIT0_PORT					GPIOD
 #define ADD_BIT0_PIN					GPIO_PIN_0
 #define ADD_BIT1_PORT					GPIOD
@@ -124,8 +124,9 @@
 #define ADD_BIT6_PIN 					GPIO_PIN_8
 #define ADD_BIT7_PORT					GPIOA
 #define ADD_BIT7_PIN 					GPIO_PIN_12
-
+#endif
 /* define RELAY OUTPUT*/
+#ifndef RELAY_DK1_PORT
 #define RELAY_DK1_PORT				GPIOC
 #define RELAY_DK1_PIN					GPIO_PIN_2
 #define RELAY_DK2_PORT				GPIOC
@@ -137,7 +138,9 @@
 ///* define Buzzer */
 #define BUZZER_PORT						GPIOB
 #define BUZZER_PIN						GPIO_PIN_9
-
+#endif
+/* define INPUT*/
+#ifndef W1_D0_PORT
 #define W1_D0_PORT 						GPIOA
 #define W1_D0_PIN							GPIO_PIN_3
 #define W1_D1_PORT 						GPIOA
@@ -146,11 +149,12 @@
 #define W2_D0_PIN							GPIO_PIN_6
 #define W2_D1_PORT 						GPIOA
 #define W2_D1_PIN							GPIO_PIN_8
-
+#endif
 /*define 485 DIR*/
 #define CCU_DIR_PORT 					GPIOA
 #define CCU_DIR_PIN						GPIO_PIN_11
-
+/*define LCD*/
+#ifndef HD44780
 /* Control pins */
 /* RS - Register select pin */
 #define HD44780_RS_PORT			GPIOE
@@ -174,5 +178,5 @@
 /* D7 - Data 7 pin */
 #define HD44780_D7_PORT			GPIOE
 #define HD44780_D7_PIN			GPIO_Pin_7
-
+#endif
 #endif

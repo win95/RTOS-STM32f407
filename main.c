@@ -14,6 +14,7 @@
 #include "tm_stm32f4_ethernet.h"
 #include "tm_stm32f4_exti.h"
 #include "tm_stm32f4_fatfs.h"
+#include "tm_stm32f4_rtc.h"
 #include "stm32f4xx_rcc.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,17 +27,19 @@
 #include "croutine.h"
 //******************************************************************************
 
-void vLedBlinkBlue(void *pvParameters);
+void vConfigure(void *pvParameters);
 void vLedBlinkRed(void *pvParameters);
 void vEthernet(void *pvParameters);
 void vMain(void *pvParameters);
 void printf_d(char *str);
+
+/* Fatfs object */
+FATFS FatFs;
+/* File object */
+FIL fil;
+FRESULT fres;
+DSTATUS disk_initialize (BYTE drv);
 /*Khoi LCD*/
-	/* Fatfs object */
-	FATFS FatFs;
-	/* File object */
-	FIL fil;
-	FRESULT fres;
 	uint8_t customChar[] = {
 		0x1F,	/*  xxx 11111 */
 		0x11,	/*  xxx 10001 */
@@ -49,42 +52,55 @@ void printf_d(char *str);
 	};
 unsigned char flag_LCD = 0;
 char buffer_lcd[20];
+/*Khoi COM*/
 char str[50];
-void read_sw_add(void);
-char data_tcp[20];
-unsigned char  Process=0;	
-void WaitPC(unsigned int t);
-void ProcessAction(void);
-	
-unsigned char flag_RFID = 0;	/*Send SelectCard */		
-unsigned char flag_RFID1=0;
-unsigned char flag_RFID2=0;
-unsigned char flag_PC=0;
-char *vip_id[5] = {
-	"80 50 37 54",
-	"12 23 45 78",
-	"01 12 34 45",
-	"01 12 34 45",
-	"01 12 34 45"
-	};
-char SelectCard[4]= {0xBA,0x02,0x01,0xB9};       
-char IDCAR1[7]={0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-char IDCAR2[7]={0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-int LEDStatus=0;
 char BufferCom1[50];
 char BufferCom2[50];
 char BufferCom3[50];
+/*Khoi Rtc*/
+TM_RTC_Time_t datatime;
+/*Khoi SW*/
+void read_sw_add(void);
+unsigned char value_dip =0; /* value DIP switch*/
+/*Khoi Ethernet*/
+char data_tcp[20];
+typedef struct {	/* Create simple typedef for DNS controlling */
+	uint8_t Working;
+	uint8_t HaveIP;
+	uint8_t ip[4];
+} TM_DNS_t;
+TM_DNS_t MyDNS;
+uint16_t requests_count = 1;
+/*Khoi process*/
+unsigned char  Process=0;
+/*Khoi RFID*/
+unsigned char flag_RFID = 0;	/*Send SelectCard */		
+unsigned char flag_RFID1=0;
+unsigned char flag_RFID2=0;
+char SelectCard[4]= {0xBA,0x02,0x01,0xB9};       
+char IDCAR1[7]={0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+char IDCAR2[7]={0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 char UID1[50];
 char UID2[50];
-char buffer_lcd[20];
-/* value DIP switch*/
-unsigned char value_dip =0;
+/*Khoi Action*/
+void ProcessAction(void);
+/*Khoi Wait*/	
+void WaitPC(unsigned int t);
+unsigned char flag_PC=0;
+/*Khoi VIP*/
+char *vip_id[3] = {
+	"b7 7b 87 52",
+	"04 4f 97 c6",
+	"01 12 34 45",
+	};
 /*time out*/
 unsigned int timeout = 0	;
 volatile uint8_t counter = 0;
 /* Khoi Ban phim */
 unsigned char express;
+unsigned char flag_dtmf =0;
 /*Khoi 485*/
+int LEDStatus=0;
 int set_485_send();
 int set_485_recv();
 unsigned char flag_485 = 0;
@@ -92,15 +108,14 @@ unsigned char flag_com1 = 0;
 /* Khoi INPUT*/
 unsigned char flag_W1D1 = 0;
 unsigned char flag_W1D0 = 0;
-//unsigned char flag_W2D1 = 0;
-//unsigned char flag_W2D0 = 0;
-
+unsigned char flag_W2D1 = 0;
+unsigned char flag_W2D0 = 0;
+/*Khoi flag*/
 unsigned char flag_R11x =0;
 unsigned char flag_R21x =0;
 unsigned char flag_R12 =0;
 unsigned char flag_R22 =0;
 unsigned char flag_R31 =0;
-
 unsigned char flag_R10 =0;
 unsigned char flag_R20 =0;
 unsigned char flag_R11 =0;
@@ -108,7 +123,6 @@ unsigned char flag_R21 =0;
 unsigned char flag_test=0;
 int check_vip(char * name);
 /* Khoi OUTPUT*/
-
 int turn_on_dk1();
 int turn_off_dk1();
 
@@ -120,7 +134,7 @@ int turn_off_dk3();
 
 int	turn_on_dk4();
 int turn_off_dk4();
-
+/*Khoi thoi gian RELAY*/
 int timerdk1 =0;
 int timerdk2 =0;
 int timerdk3 =0;
@@ -130,23 +144,14 @@ int timer_dk1 =0;
 int timer_dk2 =0;
 int timer_dk3 =0;
 int timer_dk4 =0;	
+/*Khoi timer*/
 #define NUM_TIMERS 10
 xTimerHandle xTimers[ NUM_TIMERS ];
 long lExpireCounters[ NUM_TIMERS ] = { 0 };
 void vTimerCallback1( xTimerHandle  pxTimer );
 void vTimerCallback2( xTimerHandle  pxTimer );
-/* Create simple typedef for DNS controlling */
-typedef struct {
-	uint8_t Working;
-	uint8_t HaveIP;
-	uint8_t ip[4];
-} TM_DNS_t;
-TM_DNS_t MyDNS;
-
-uint16_t requests_count = 1;
 
 #define STACK_SIZE_MIN	128	/* usStackDepth	- the stack size DEFINED IN WORDS.*/
-
 const signed char timer_xx[] = "Timer";
 
 
@@ -155,7 +160,7 @@ const signed char timer_xx[] = "Timer";
 //******************************************************************************
 int main(void)
 {	
-		long x=0;
+//		long x=0;
           xTimers[1] = xTimerCreate(timer_xx,         // Just a text name, not used by the kernel.
                                           (500/ portTICK_RATE_MS),     // The timer period in ticks.
                                           pdTRUE,         // The timers will auto-reload themselves when they expire.
@@ -215,15 +220,22 @@ int main(void)
 /* Initialize USART6 at 115200 baud, TX: PC6, RX: PC7 , COM 1 - RFID1 gan cong tac nguon*/ 
 	TM_USART_Init(USART6, TM_USART_PinsPack_1, 115200);
 /* Initialize USART3 at 115200 baud, TX: PD8, RX: PD9 ,	COM 2 -PC gan ethernet*/
-	TM_USART_Init(USART3, TM_USART_PinsPack_3, 115200);
+	TM_USART_Init(USART3, TM_USART_PinsPack_3, 9600);
 /* Initialize USART1 at 115200 baud, TX: PA9, RX: PA10, CONG 485 */
 	TM_USART_Init(USART1, TM_USART_PinsPack_1, 9600);
-
-	xTaskCreate( vLedBlinkBlue, (const signed char*)"Led Blink Task Blue", 
+if (!TM_RTC_Init(TM_RTC_ClockSource_Internal)) {
+		/* RTC was first time initialized */
+		/* Do your stuff here */
+		/* eg. set default time */
+	}
+	/* Set wakeup interrupt every 1 second */
+	TM_RTC_Interrupts(TM_RTC_Int_60s);
+/*Task Create Begin*/
+	xTaskCreate( vConfigure, (const signed char*)"Configure using DTMF", 
 		STACK_SIZE_MIN, NULL, tskIDLE_PRIORITY, NULL );
 	xTaskCreate( vLedBlinkRed, (const signed char*)"Led Blink Task Red", 
 		STACK_SIZE_MIN, NULL, tskIDLE_PRIORITY, NULL );
-	xTaskCreate( vEthernet, (const signed char*)"Led Blink Task Green", 
+	xTaskCreate( vEthernet, (const signed char*)"Ethernet Running ..", 
 		STACK_SIZE_MIN, NULL, tskIDLE_PRIORITY, NULL );
 	xTaskCreate( vMain, (const signed char*)"Main run ...", 
 		STACK_SIZE_MIN, NULL, tskIDLE_PRIORITY, NULL );
@@ -232,25 +244,159 @@ int main(void)
 }
 //******************************************************************************
 //******************************************************************************
-void vLedBlinkBlue(void *pvParameters)
+void vConfigure(void *pvParameters)
 {
-
-	uint32_t total, free;
-		/* Mount drive */
-		if (f_mount(&FatFs, "SD:", 1) == FR_OK) {
-		printf_d("Mount OK \n");
-		/* Unmount drive, don't forget this! */
-			if(f_mount(0,"0:", 1)) printf_d("Unmount OK \n");
-	}
+unsigned int config=0;
+unsigned int config1=0;
+unsigned int config2=0;
+unsigned int config3=0;
+unsigned int config4=0;
+unsigned int config5=0;
+unsigned int config6=0;
+uint8_t key;
+char str_config[20];
+static uint8_t	cnt=0;
 	for(;;)
 	{
-		STM_EVAL_LEDToggle(LED_BLUE);
-		//vTaskDelay( 500 / portTICK_RATE_MS );
-	}
-}
 
+if(flag_dtmf==1){
+	key = express;
+	if((key=='*')&&(config==0)) config =1;
+	if(config==1){
+		if((config1+config2+config3+config4+config5+config6)==0){
+		if((key=='1')&&(config1==0)) config1=1;
+		if((key=='2')&&(config2==0)) config2=1;
+		if((key=='3')&&(config3==0)) config3=1;
+		if((key=='4')&&(config4==0)) config4=1;
+		if((key=='5')&&(config5==0)) config5=1;
+		if((key=='6')&&(config6==0)) config6=1;
+		cnt =0;
+		memset(str_config,0,0);
+		}
+		if(config1==1){
+		str_config[cnt] = key;
+		cnt++;
+		if(key=='#') { 
+		printf_d("ket thuc chuoi lenh1\n");
+		config =0;
+		config1 =0;
+		cnt=0;
+		sprintf(str,"%s",str_config);
+		printf_d(str);
+		}}
+		if(config2==1){
+		str_config[cnt] = key;
+		cnt++;
+		if(key=='#') { 
+		printf_d("ket thuc chuoi lenh2\n");
+		config =0;
+		config2 =0;
+		cnt=0;
+		sprintf(str,"%s",str_config);
+		printf_d(str);
+		}}
+		if(config3==1){
+		str_config[cnt] = key;
+		cnt++;
+		if(key=='#') { 
+		printf_d("ket thuc chuoi lenh3\n");
+		config =0;
+		config3 =0;
+		cnt=0;
+		sprintf(str,"%s",str_config);
+		printf_d(str);
+		}}
+		if(config4==1){
+		str_config[cnt] = key;
+		cnt++;
+		if(key=='#') { 
+		printf_d("ket thuc chuoi lenh4\n");
+		config =0;
+		config4 =0;
+		cnt=0;
+		sprintf(str,"%s",str_config);
+		printf_d(str);
+		}}
+		if(config5==1){
+		str_config[cnt] = key;
+		cnt++;
+		if(key=='#') { 
+		printf_d("ket thuc chuoi lenh5\n");
+		config =0;
+		config5 =0;
+		cnt=0;
+		sprintf(str,"%s",str_config);
+		printf_d(str);
+		}}
+		if(config6==1){
+		str_config[cnt] = key;
+		cnt++;
+		if(key=='#') { 
+		printf_d("ket thuc chuoi lenh6\n");
+		config =0;
+		config6 =0;
+		cnt=0;
+		sprintf(str,"%s",str_config);
+		printf_d(str);
+		}}		
+		}	
+	if(key=='#') {
+		config=0;
+		memset(str_config,'\0',0);
+	}
+	flag_dtmf =0;	
+}
+}
+}
 void vLedBlinkRed(void *pvParameters)
 {
+	/* Free and total space */
+	uint32_t total, free;
+	static FRESULT rc;   /* Result code */  
+	static UINT bw, br, numread;
+    static BYTE buff[64];
+    BYTE Message[] = "HELLO from www.letrungthang.blogspot.com" ; // message's content
+    TCHAR *FilePath = "MESSAGE.TXT" ; // file path
+		/* Mount drive */
+	if (f_mount(&FatFs, "0:", 1) == FR_OK) {
+		/* Mounted OK, turn on RED LED */
+		
+		/* Try to open file */
+		if (f_open(&fil,FilePath, FA_CREATE_ALWAYS | FA_READ | FA_WRITE | FA_OPEN_ALWAYS) == FR_OK) {
+			/* File opened, turn off RED and turn on GREEN led */
+			
+//			/* If we put more than 0 characters (everything OK) */
+//			if (f_puts("First string in my file\n", &fil) > 0) {
+//				if (TM_FATFS_DriveSize(&total, &free) == FR_OK) {
+//					/* Data for drive size are valid */
+//				}
+//			}
+    rc = f_write(&fil, Message, sizeof(Message)-1, &bw); // write file
+
+    if (!rc) {
+      sprintf(str,"write success. %u bytes written.\n\r", bw);
+			printf_d(str);
+    }else  {
+      sprintf(str,"write file Failure...error = %u\n\r",rc);
+			printf_d(str);
+    }			
+   sprintf(str,"\nClose the file writeen.\n\r");
+    printf_d(str);
+		taskENTER_CRITICAL ();
+		rc = f_close(&fil); // close file
+		taskEXIT_CRITICAL ();
+    if (!rc) {
+      sprintf(str,"File writeen closed success.\n\r");
+    printf_d(str);
+		}else  {
+      sprintf(str,"File close writeen was failure...error = %u\n\r",rc);
+    printf_d(str);
+		}
+		}
+		
+		/* Unmount drive, don't forget this! */
+		f_mount(0, "0:", 1);
+	}
 	for(;;)
 	{
 		STM_EVAL_LEDToggle(LED_ORANGE);
@@ -259,8 +405,8 @@ void vLedBlinkRed(void *pvParameters)
 }
 
 void vEthernet(void *pvParameters)
-{
-	TM_USART_Puts(USART3,"Program starting..\n");
+{	printf_d("Program starting..\n");
+	//TM_USART_Puts(USART3,"Program starting..\n");
 	if (TM_ETHERNET_Init(NULL, NULL, NULL, NULL) == TM_ETHERNET_Result_Ok) {
 	printf_d("TM_ETHERNET_Init OK \n");
 	}
@@ -280,6 +426,20 @@ void vEthernet(void *pvParameters)
 
 void vMain(void *pvParameters)
 {
+	/* init DTMF*/
+	TM_GPIO_Init(DTMF_BIT0_PORT, DTMF_BIT0_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_NOPULL, TM_GPIO_Speed_Low);
+	TM_GPIO_Init(DTMF_BIT1_PORT, DTMF_BIT1_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_NOPULL, TM_GPIO_Speed_Low);
+	TM_GPIO_Init(DTMF_BIT2_PORT, DTMF_BIT2_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_NOPULL, TM_GPIO_Speed_Low);
+	TM_GPIO_Init(DTMF_BIT3_PORT, DTMF_BIT3_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_NOPULL, TM_GPIO_Speed_Low);
+	/* DTMF*/
+		if (TM_EXTI_Attach(DFMF_BIT4_PORT, DTMF_BIT4_PIN, TM_EXTI_Trigger_Rising) == TM_EXTI_Result_Ok) {
+		printf_d("DFMF_BIT4 init\n");
+	}	
+	/*init interrup INPUT*/
+		TM_EXTI_Attach(W2_D0_PORT, W2_D0_PIN, TM_EXTI_Trigger_Falling);
+		TM_EXTI_Attach(W2_D1_PORT, W2_D1_PIN, TM_EXTI_Trigger_Falling);
+		TM_EXTI_Attach(W1_D1_PORT, W1_D1_PIN, TM_EXTI_Trigger_Rising);
+		TM_EXTI_Attach(W1_D0_PORT, W1_D0_PIN, TM_EXTI_Trigger_Rising);
 		/*init SWADD*/
 	TM_GPIO_Init(ADD_BIT0_PORT, ADD_BIT0_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);	
 	TM_GPIO_Init(ADD_BIT1_PORT, ADD_BIT1_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
@@ -327,6 +487,7 @@ void vMain(void *pvParameters)
 	if(LEDStatus==0) TM_USART_Puts(USART1, "/LED000>\r\n");
 	if(LEDStatus==1) TM_USART_Puts(USART1, "/LED001>\r\n");
 	if(LEDStatus==2) TM_USART_Puts(USART1, "/LED002>\r\n");
+	
 	}	
 
 /* xu li W1D0 - dk1*/
@@ -370,8 +531,15 @@ if(flag_RFID1==1)
 			Process=0;
 		}
 		else{
-		if(Process)TM_USART_Puts(USART3,UID1);
+		if(Process){
+		TM_USART_Puts(USART3,UID1);
+		sprintf(data_tcp,"%s",UID1);
+			//		/* Try to make a new connection, port 80 */
+		if (TM_ETHERNETCLIENT_Connect("server",192,168,1,108,8081, "./index.txt") != TM_ETHERNET_Result_Ok) {
+		/* Print to user */
+		//printf("Can not make a new connection!\n");
 		}
+		}}
 		WaitPC(200);
 		flag_RFID1=0;
 		if(flag_PC)
@@ -483,7 +651,7 @@ if (timer_dk4 >= 4){
 //******************************************************************************
 /* Tran duc code*/
 void printf_d(char *str){
-	TM_USART_Puts(USART3,str);
+	//TM_USART_Puts(USART3,str);
 }
 void 	ProcessAction(void){
 		if(strncmp(BufferCom3,"R10",3)==0) // mo relay 1
@@ -604,6 +772,10 @@ void 	TM_USART3_ReceiveHandler(uint8_t c) {	// PC
 	if((cnt==2)&&(Process==1))flag_PC=1;
 	if(cnt<48)cnt++;
 	else cnt =0;
+	
+//	//		/* Try to make a new connection, port 80 */
+//	if (TM_ETHERNETCLIENT_Connect("server",192,168,1,108,8081, "./index.txt") != TM_ETHERNET_Result_Ok) {
+//	}
 }
 void 	TM_USART6_ReceiveHandler(uint8_t c) {	// RFID1
 	static uint8_t cnt=0;
@@ -621,14 +793,15 @@ void 	TM_USART6_ReceiveHandler(uint8_t c) {	// RFID1
 
 uint16_t TM_ETHERNETCLIENT_CreateHeadersCallback(TM_TCPCLIENT_t* connection, char* buffer, uint16_t buffer_length) {
 	/* Create request headers */
-	//sprintf(buffer, "GET /index.txt?number=%d HTTP/1.1\r\n", *(uint16_t *)connection->user_parameters);
-	//sprintf(buffer, "number=%d\r\n", *(uint16_t *)connection->user_parameters);
-	//strcat(buffer, "Host: stm32f4-discovery.com\r\n");
-	//strcat(buffer, "Connection: close\r\n");
-	//strcat(buffer, "\r\n");
-	//sprintf(buffer,"\r\n");
+//	sprintf(buffer, "GET /index.txt?number=%d HTTP/1.1\r\n", *(uint16_t *)connection->user_parameters);
+//	sprintf(buffer, "number=%d\r\n", *(uint16_t *)connection->user_parameters);
+//	strcat(buffer, "Host: stm32f4-discovery.com\r\n");
+//	strcat(buffer, "Connection: close\r\n");
+//	strcat(buffer, "\r\n");
+//	sprintf(buffer,"\r\n");
+//sprintf(buffer,"./index.txt");
 	sprintf(buffer,"%s",data_tcp);
-	/* Return number of bytes in buffer */
+/* Return number of bytes in buffer */
 	return strlen(buffer);
 }
 
@@ -639,29 +812,28 @@ void TM_ETHERNETCLIENT_ReceiveDataCallback(TM_TCPCLIENT_t* connection, uint8_t* 
 	sprintf(str,"Receiveing %d bytes of data from %s\n", buffer_length, connection->name);
 	printf_d(str);
 	
-	/* Go through entire buffer, remove response headers */
-	if (connection->headers_done == 0) {
-		for (i = 0; i < buffer_length; i++) {
-			if (
-				buffer[i] == '\r' &&
-				buffer[i + 1] == '\n' &&
-				buffer[i + 2] == '\r' &&
-				buffer[i + 3] == '\n'
-			) {
-				/* Headers done */
-				connection->headers_done = 1;
-				/* Increase i */
-				i += 3;
-				/* Break */
-				break;
-			}
-		}
-	}
+//	/* Go through entire buffer, remove response headers */
+//	if (connection->headers_done == 0) {
+//		for (i = 0; i < buffer_length; i++) {
+//			if (
+//				buffer[i] == '\r' &&
+//				buffer[i + 1] == '\n' &&
+//				buffer[i + 2] == '\r' &&
+//				buffer[i + 3] == '\n'
+//			) {
+//				/* Headers done */
+//				connection->headers_done = 1;
+//				/* Increase i */
+//				i += 3;
+//				/* Break */
+//				break;
+//			}
+//		}
+//	}
 	
 	/* Print data */
 	for (; i < buffer_length; i++) {
 		/* Print response */
-//		TM_USART_Puts(USART3,"%c", buffer[i]);
 		sprintf(str,"%c", buffer[i]);
 		printf_d(str);
 	}
@@ -678,13 +850,11 @@ void TM_ETHERNETCLIENT_ConnectionClosedCallback(TM_TCPCLIENT_t* connection, uint
 	if (success) {
 	sprintf(str,"Connection %s was successfully closed. Number of active connections: %d\n", connection->name, *connection->active_connections_count);
 	printf_d(str);
-		//TM_USART_Puts(USART6,"Connection %s was successfully closed. Number of active connections: %d\n", connection->name, *connection->active_connections_count);
-	} else {
-		sprintf(str,"Connection %s was closed because of error. Number of active connections: %d\n", connection->name, *connection->active_connections_count);
+	} 
+	else {
+	sprintf(str,"Connection %s was closed because of error. Number of active connections: %d\n", connection->name, *connection->active_connections_count);
 	printf_d(str);
-		//TM_USART_Puts(USART6,"Connection %s was closed because of error. Number of active connections: %d\n", connection->name, *connection->active_connections_count);
-	}
-	
+	}	
 	/* Increase number of requests */
 	requests_count++;
 }
@@ -693,14 +863,12 @@ void TM_ETHERNETCLIENT_ErrorCallback(TM_TCPCLIENT_t* connection) {
 	/* Print to user */
 	sprintf(str,"An error occured on connection %s\n", connection->name);
 	printf_d(str);
-//	TM_USART_Puts(USART6,"An error occured on connection %s\n", connection->name);
 }
 
 void TM_ETHERNETCLIENT_ConnectionStartedCallback(TM_TCPCLIENT_t* connection) {
 	/* Print to user */
 	sprintf(str,"Connection %s has started\n", connection->name);
 	printf_d(str);
-//	TM_USART_Puts(USART6,"Connection %s has started\n", connection->name);
 }
 
 /* DNS has IP */
@@ -720,7 +888,6 @@ void TM_ETHERNETDNS_FoundCallback(char* host_name, uint8_t ip_addr1, uint8_t ip_
 		/* Print to user */
 		sprintf(str,"We have IP address for %s: %d.%d.%d.%d\n", host_name, ip_addr1, ip_addr2, ip_addr3, ip_addr4);
 		printf_d(str);
-//		TM_USART_Puts(USART6,"We have IP address for %s: %d.%d.%d.%d\n", host_name, ip_addr1, ip_addr2, ip_addr3, ip_addr4);
 	}
 }
 
@@ -736,7 +903,6 @@ void TM_ETHERNETDNS_ErrorCallback(char* host_name) {
 	/* Print to user */
 	sprintf(str,"DNS has failed to get IP address for %s\n", host_name);
 	printf_d(str);
-//	TM_USART_Puts(USART6,"DNS has failed to get IP address for %s\n", host_name);
 }
 
 void TM_ETHERNET_IPIsSetCallback(uint8_t ip_addr1, uint8_t ip_addr2, uint8_t ip_addr3, uint8_t ip_addr4, uint8_t dhcp) {
@@ -746,12 +912,10 @@ void TM_ETHERNET_IPIsSetCallback(uint8_t ip_addr1, uint8_t ip_addr2, uint8_t ip_
 		/* IP set with DHCP */
 		sprintf(str,"IP: %d.%d.%d.%d assigned by DHCP server\n", ip_addr1, ip_addr2, ip_addr3, ip_addr4);
 		printf_d(str);
-//		TM_USART_Puts(USART6,"IP: %d.%d.%d.%d assigned by DHCP server\n", ip_addr1, ip_addr2, ip_addr3, ip_addr4);
 	} else {
 		/* Static IP */
 		sprintf(str,"IP: %d.%d.%d.%d; STATIC IP used\n", ip_addr1, ip_addr2, ip_addr3, ip_addr4);
 		printf_d(str);
-//		TM_USART_Puts(USART6,"IP: %d.%d.%d.%d; STATIC IP used\n", ip_addr1, ip_addr2, ip_addr3, ip_addr4);
 	}
 	
 	/* Print MAC address to user */
@@ -825,7 +989,6 @@ void TM_ETHERNET_LinkIsDownCallback(void) {
 	/* Print to user */
 	//sprintf(str,"Link is down, do you have connected to your modem/router?");
 	//TM_USART_Puts(USART3,str);
-	//TM_USART_Puts(USART6,"Link is down, do you have connected to your modem/router?");
 }
 void TM_ETHERNET_LinkIsUpCallback(void) {
 	/* Cable has been plugged in back, link is detected */
@@ -835,7 +998,6 @@ void TM_ETHERNET_LinkIsUpCallback(void) {
 	/* Print to user */
 		//sprintf(str,"Link is up back\n");
 		//TM_USART_Puts(USART3,str);
-	//TM_USART_Puts(USART6,"Link is up back\n");
 }
 /* Delay 1ms handler */
 void TM_DELAY_1msHandler(void) {
@@ -930,7 +1092,7 @@ void 	TM_EXTI_Handler(uint16_t GPIO_Pin) {
 				if(TM_GPIO_GetInputPinValue(DTMF_BIT2_PORT, DTMF_BIT2_PIN)==0){// Q3 =0
 					if(TM_GPIO_GetInputPinValue(DTMF_BIT3_PORT, DTMF_BIT3_PIN)==0)// Q4 =0  
 						express = '3';
-					else express = '.';
+					else express = '*';
 						}
 				else{ // Q1 =1,Q2=1,Q3=1
 					if(TM_GPIO_GetInputPinValue(DTMF_BIT3_PORT, DTMF_BIT3_PIN)==0)
@@ -939,15 +1101,15 @@ void 	TM_EXTI_Handler(uint16_t GPIO_Pin) {
 				}
 			}
 		}
-		
-//		TM_USART_Putc(USART3,express);
+		flag_dtmf=1;
+		TM_USART_Putc(USART3,express);
 		/* Toggle RED led */
 //		TM_DISCO_LedToggle(LED_RED);
 //		/* Check counter */
-		if (++counter >= 10) {
-			/* Detach external interrupt for GPIO_Pin_0 no matter on which GPIOx is connected */
-			TM_EXTI_Detach(GPIO_Pin_0);
-		}
+//		if (++counter >= 10) {
+//			/* Detach external interrupt for GPIO_Pin_0 no matter on which GPIOx is connected */
+//			TM_EXTI_Detach(GPIO_Pin_0);
+//		}
 	}
 	
 //	/* Handle external line 13 interrupts */
@@ -977,6 +1139,27 @@ void 	TM_EXTI_Handler(uint16_t GPIO_Pin) {
 	timerdk2=(timeout*2);	
 }
 }
+/* Called on wakeup interrupt RTC*/
+void TM_RTC_RequestHandler() {
+	/* Get time */
+	TM_RTC_GetDateTime(&datatime, TM_RTC_Format_BIN);
+	
+	/* Format time */
+//	sprintf(str, "%02d-%02d-%02d/%02d-%02d-%02d  Unix: %u\n",
+				//datatime.unix
+	sprintf(str, "%02d-%02d-%02d/%02d-%02d-%02d\n",
+				datatime.hours,
+				datatime.minutes,
+				datatime.seconds,
+				datatime.date,				
+				datatime.month,
+				datatime.year+2015
+	);
+	/* Send to USART */
+	printf_d(str);
+	turn_off_dk3();
+	turn_off_dk4();
+}
 void 	read_sw_add(void){
 	unsigned int sw_add[8];
 	if(GPIO_ReadInputDataBit(ADD_BIT0_PORT,ADD_BIT0_PIN)==0) sw_add[0] = 1;
@@ -996,9 +1179,9 @@ void 	read_sw_add(void){
 	if(GPIO_ReadInputDataBit(ADD_BIT7_PORT,ADD_BIT7_PIN)==0) sw_add[7] = 1;
 			else sw_add[7] = 0;
 	
-	//value_dip=6;
-	value_dip= 1*sw_add[0]+2*sw_add[1]+4*sw_add[2]+8*sw_add[3]+16*sw_add[4]+32*sw_add[5]+64*sw_add[6]+128*sw_add[7];
-	if(value_dip == 0) value_dip=7; 
+	value_dip=60;
+//	value_dip= 1*sw_add[0]+2*sw_add[1]+4*sw_add[2]+8*sw_add[3]+16*sw_add[4]+32*sw_add[5]+64*sw_add[6]+128*sw_add[7];
+//	if(value_dip == 0) value_dip=60; 
 }
 int 	turn_on_dk1(){
 	if(!LEDStatus){
