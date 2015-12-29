@@ -47,17 +47,6 @@
 
 #define LINK_TIMER_INTERVAL 1000
 
-#ifndef MAC_ADDR0
-#define MAC_ADDR0							0x08
-#define MAC_ADDR1							0x00
-#define MAC_ADDR2							0x69
-#define MAC_ADDR3							0x02
-#define MAC_ADDR4							0x00
-#define MAC_ADDR5							0xFC
-#endif
-
-/* Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
-/* Used in case DHCP is not used or response failed */
 /* In case you want to use custom IP, use parameter in init function */
 #ifndef IP_ADDR0
 #define IP_ADDR0							192
@@ -65,7 +54,6 @@
 #define IP_ADDR2							1
 #define IP_ADDR3							120
 #endif
-
 /* NETMASK */
 /* In case you want to use custom netmask, use parameter in init function */
 #ifndef NETMASK_ADDR0
@@ -83,6 +71,8 @@
 #define GW_ADDR2							1
 #define GW_ADDR3							1
 #endif
+
+
 /* If you need to change settings for your SPI, then uncomment lines you want to change */
 /* Replace x with SPI number, 1 - 6 */
 #define FATFS_USE_SDIO	1

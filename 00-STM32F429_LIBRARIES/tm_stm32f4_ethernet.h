@@ -189,16 +189,15 @@ TXD1        |PB13   |PG14
 #include "stm32f4xx_rcc.h"
 #include "stm32f4xx_gpio.h"
 #include "defines.h"
+#include "attributes.h"
+#include "tm_stm32f4_delay.h"
 #include "tm_stm32f4_gpio.h"
-/*RTOS*/
-//#include "FreeRTOS.h"
-//#include "queue.h"
-//#include "task.h"
+
 /* Ethernet based includes */
 #include "stm32f4x7_eth.h"
 #include "stm32f4x7_eth_bsp.h"
 #include "netconf.h"
-#include "tcp_echoclient.h"
+//#include "tcp_echoclient.h"
 #include "lwip/ip_addr.h"
 #include "lwip/dns.h"
 #include "lwip/tcp.h"
@@ -1119,6 +1118,8 @@ void TM_ETHERNETPHY_CustomOptions(uint32_t PHYAddress);
  * @note   With __weak parameter to prevent link errors if not defined by user
  */
 uint8_t TM_ETHERNET_InitPinsCallback(void);
+
+err_t tcp_echoclient_sendata(	TM_TCPCLIENT_t* client);
 
 /**
  * @}

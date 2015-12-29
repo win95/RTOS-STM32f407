@@ -15,6 +15,7 @@
 /* Maximal number of active client connections at a time */
 #define TCPCLIENT_MAX_CONNECTIONS       4
 
+
 #if LWIP_TCP
 static uint8_t tcp_active_connections = 0;
 /* Header data */
@@ -26,6 +27,7 @@ static uint8_t CablePluggedWithActiveConnection = 0;
 TM_TCPCLIENT_t TM_Client[TCPCLIENT_MAX_CONNECTIONS];
 
 /* Private function prototypes */
+static void tcp_client_free(TM_TCPCLIENT_t* client);
 static err_t tcp_echoclient_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
 static void tcp_echoclient_connection_close(TM_TCPCLIENT_t* client, uint8_t success);
 static err_t tcp_echoclient_poll(void *arg, struct tcp_pcb *tpcb);
@@ -132,7 +134,8 @@ err_t tcp_echoclient_connect(char* conn_name, uint8_t ip1, uint8_t ip2, uint8_t 
 	if (client == NULL) {
 		return ERR_MEM;
 	}
-	
+	tcp_echoclient_connection_close(client, 0);
+	tcp_client_free(client);
 	/* create new tcp pcb */
 	client->pcb = tcp_new();
 	
@@ -187,10 +190,8 @@ err_t tcp_echoclient_connect(char* conn_name, uint8_t ip1, uint8_t ip2, uint8_t 
 static err_t tcp_echoclient_connected(void *arg, struct tcp_pcb *tpcb, err_t err) {
 	uint16_t length;
 	TM_TCPCLIENT_t* client;
-
 	/* Client is passed as arguments */
 	client = (TM_TCPCLIENT_t *)arg;
-	
 	if (err == ERR_OK) {
 		/* We are connected */
 		client->state = CLIENT_CONNECTED;
@@ -232,8 +233,8 @@ static err_t tcp_echoclient_connected(void *arg, struct tcp_pcb *tpcb, err_t err
 			
 			/* send data */
 			tcp_echoclient_send(client);
-
 			/* Return OK */
+			TM_Client[0] = client[0];
 			return ERR_OK;
 		}
 	} else {
@@ -310,7 +311,6 @@ static err_t tcp_echoclient_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
 static void tcp_echoclient_send(TM_TCPCLIENT_t* client) {
 	struct pbuf *ptr;
 	err_t wr_err = ERR_OK;
-	
 	while ((wr_err == ERR_OK) &&
 		(client->p_tx != NULL) && 
 		(client->p_tx->len <= tcp_sndbuf(client->pcb))
@@ -444,6 +444,7 @@ static void tcp_echoclient_error(void *arg, err_t err) {
 	/* Close connection */
 	tcp_echoclient_connection_close(client, 0);
 }
+
 
 #endif /* LWIP_TCP */
 

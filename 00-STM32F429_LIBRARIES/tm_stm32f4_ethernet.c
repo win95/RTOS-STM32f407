@@ -32,7 +32,7 @@ TM_ETHERNET_Result_t TM_ETHERNET_Init(uint8_t* mac_addr, uint8_t* ip_addr, uint8
 	TM_ETHERNET_Result_t result = TM_ETHERNET_Result_Ok;
 	
 	/* Initialize delay */
-//	TM_DELAY_Init();
+	TM_DELAY_Init();
 
 	/* Fill settings */
 	/* MAC address */
@@ -250,6 +250,7 @@ TM_ETHERNET_Result_t TM_ETHERNETCLIENT_Connect(char* conn_name, uint8_t ip1, uin
 	
 	/* Try to Connect */
 	e = tcp_echoclient_connect(conn_name, ip1, ip2, ip3, ip4, port, user_parameters);
+	
 	if (e == ERR_RST) {
 		/* We need system reset here */
 		/* If user want's to implement it, otherwise problems can happen */
@@ -264,7 +265,6 @@ TM_ETHERNET_Result_t TM_ETHERNETCLIENT_Connect(char* conn_name, uint8_t ip1, uin
 	/* Return OK */
 	return TM_ETHERNET_Result_Ok;
 }
-
 TM_ETHERNET_Result_t TM_ETHERNETSERVER_SetSSITags(TM_ETHERNET_SSI_t* SSI_Tags, uint16_t number_of_tags) {
 	static uint8_t isSet = 0;
 	if (!isSet) {
@@ -548,3 +548,4 @@ void TM_ETHERNET_INT_DNSFoundCallback(const char *name, struct ip_addr *ipaddr, 
 		TM_ETHERNETDNS_ErrorCallback((char *)name);
 	}
 }
+
