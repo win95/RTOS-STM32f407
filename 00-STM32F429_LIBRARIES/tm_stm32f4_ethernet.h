@@ -1119,8 +1119,6 @@ void TM_ETHERNETPHY_CustomOptions(uint32_t PHYAddress);
  */
 uint8_t TM_ETHERNET_InitPinsCallback(void);
 
-err_t tcp_echoclient_sendata(	TM_TCPCLIENT_t* client);
-
 /**
  * @}
  */

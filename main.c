@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 //******************************************************************************
 #include "FreeRTOS.h"
@@ -28,7 +29,6 @@
 #include "timers.h"
 #include "croutine.h"
 //******************************************************************************
-#define ACM "ACM001"
 
 /* Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
 #ifndef MAC_ADDR0
@@ -39,9 +39,6 @@
 #define MAC_ADDR4							0x00
 #define MAC_ADDR5							0xF0
 #endif
-
-
-
 
 void vConfigure(void *pvParameters);
 void vLedBlinkRed(void *pvParameters);
@@ -55,6 +52,9 @@ FATFS FatFs;
 FIL fil;
 FRESULT fres;
 DSTATUS disk_initialize (BYTE drv);
+unsigned int turnsend=0;
+unsigned int turnrecv=0;
+char ACM[8];
 /*Khoi LCD*/
 	uint8_t customChar[] = {
 		0x1F,	/*  xxx 11111 */
@@ -77,6 +77,8 @@ char BufferCom3[64];
 TM_RTC_Time_t datatime;
 void updatime(uint8_t h,uint8_t m,uint8_t s,uint8_t d,uint8_t mon,uint8_t year);
 unsigned char fag_updatime=0;
+void Sttup(char * buffer);
+void timeup(char * buffer);
 /*Khoi SW*/
 void read_sw_add(void);
 unsigned char value_dip =0; /* value DIP switch*/
@@ -87,12 +89,15 @@ typedef struct {	/* Create simple typedef for DNS controlling */
 	uint8_t HaveIP;
 	uint8_t ip[4];
 } TM_DNS_t;
+
 TM_DNS_t MyDNS;
 uint16_t requests_count = 1;
 uint8_t ipadress[4]={192,168,1,121};
 uint8_t getwayadress[4]={192,168,1,1};
 uint8_t netmaskadress[4]={255,255,255,0};
-char *revdata;
+//char revdata[100];
+//uint8_t lenrevdata=0;
+TM_TCPCLIENT_t *tcpclient;
 /*Khoi process*/
 unsigned char  Process=0;
 /*Khoi RFID*/
@@ -103,7 +108,8 @@ char SelectCard[4]= {0xBA,0x02,0x01,0xB9};
 char IDCAR1[7]={0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 char UID1[30];
 /*Khoi Action*/
-void ProcessAction(void);
+void 	ProcessAction(void);
+void 	Serveprocess(char *str,uint8_t lengh);
 /*Khoi Wait*/	
 void WaitPC(unsigned int t);
 unsigned char flag_PC=0;
@@ -137,21 +143,20 @@ unsigned char flag_R20 =0;	// active relay 2
 unsigned char flag_R11 =0;	// active relay 3
 unsigned char flag_R21 =0;	// active relay 4
 unsigned char flag_test=0;	// su dung khi gui lenh test tu cong com 
-unsigned char flag_debug=0;	// su dung khi gui lenh tu cong com tra ve gia tri OK
-unsigned char flag_serve=0;	//
+unsigned char flag_serve=0;	// su dung khi nhan lenh tu server
 int check_vip(char * name);
 /* Khoi OUTPUT*/
-static int turn_on_dk1();
-static int turn_off_dk1();
+static int turn_on_dk1(void);
+static int turn_off_dk1(void);
 
-static int	turn_on_dk2();
-static int turn_off_dk2();
+static int	turn_on_dk2(void);
+static int turn_off_dk2(void);
 
-static int	turn_on_dk3();
-static int turn_off_dk3();
+static int	turn_on_dk3(void);
+static int turn_off_dk3(void);
 
-static int	turn_on_dk4();
-static int turn_off_dk4();
+static int	turn_on_dk4(void);
+static int turn_off_dk4(void);
 /*Khoi thoi gian RELAY*/
 int timerdk1 =0;
 int timerdk2 =0;
@@ -178,7 +183,6 @@ const signed char timer_xx[] = "Timer";
 //******************************************************************************
 int main(void)
 {	
-//		long x=0;
           xTimers[1] = xTimerCreate(timer_xx,         // Just a text name, not used by the kernel.
                                           (500/ portTICK_RATE_MS),     // The timer period in ticks.
                                           pdTRUE,         // The timers will auto-reload themselves when they expire.
@@ -186,7 +190,7 @@ int main(void)
                                           vTimerCallback1     // Each timer calls the same callback when it expires.
                                       );		
           xTimers[2] = xTimerCreate(timer_xx,         // Just a text name, not used by the kernel.
-                                          (300/ portTICK_RATE_MS),     // The timer period in ticks.
+                                          (200/ portTICK_RATE_MS),     // The timer period in ticks.
                                           pdTRUE,         // The timers will auto-reload themselves when they expire.
                                           (void*)2,     // Assign each timer a unique id equal to its array index.
                                           vTimerCallback2     // Each timer calls the same callback when it expires.
@@ -420,9 +424,20 @@ void vLedBlinkRed(void *pvParameters)
 		TM_WATCHDOG_Reset();
 	for(;;)
 	{
-		TM_WATCHDOG_Reset();
+		
+		if(tcpclient->state==CLIENT_CONNECTED){
+		STM_EVAL_LEDToggle(LED_ORANGE);
+		vTaskDelay(100 / portTICK_RATE_MS );
+		}else
+		if(tcpclient->state==CLIENT_NOT_CONNECTED){
 		STM_EVAL_LEDToggle(LED_ORANGE);
 		vTaskDelay(50 / portTICK_RATE_MS );
+		}else
+		if(tcpclient->state==CLIENT_CLOSING){
+		STM_EVAL_LEDToggle(LED_ORANGE);
+		vTaskDelay(50 / portTICK_RATE_MS );
+		}
+TM_WATCHDOG_Reset();		
 	}
 }
 
@@ -479,6 +494,7 @@ void vMain(void *pvParameters)
 	TM_GPIO_Init(HD44780_RW_PORT, HD44780_RW_PIN, TM_GPIO_Mode_OUT, TM_GPIO_OType_PP, TM_GPIO_PuPd_NOPULL, TM_GPIO_Speed_High);
 	TM_GPIO_SetPinLow(HD44780_RW_PORT,HD44780_RW_PIN);
 	read_sw_add();
+	sprintf(ACM,"ACM%d",value_dip);
 	timeout = 60;
 	memset(str,'\0',0);
 	//Initialize LCD 20 cols x 4 rows
@@ -490,7 +506,10 @@ void vMain(void *pvParameters)
 	TM_HD44780_Puts(0, 2, "Welcome");
 	vTaskDelay(2000);
 	TM_HD44780_Clear();
-	sprintf(str,"Timer out %d", timeout);
+	sprintf(str,"Timerout %d", timeout);
+	TM_HD44780_Puts(0, 0,str);
+	vTaskDelay(2000);
+	sprintf(str,"ACM: %5s", ACM);
 	TM_HD44780_Puts(0, 0,str);
 	vTaskDelay(2000);
 	TM_HD44780_Clear();
@@ -500,6 +519,8 @@ void vMain(void *pvParameters)
 // configure role mo rong
 	turn_off_dk3();
 	turn_off_dk4();
+	//tcpclient->state=0;
+	bandau:
 	sprintf(data_tcp,"(1,%s,00 00 00 00 00 00 00,1,,12-0-0/1-1-14)",ACM);
 	vTaskDelay(10);
 	TM_ETHERNETCLIENT_Connect("server",192,168,1,250,8866,&requests_count);
@@ -515,6 +536,13 @@ void vMain(void *pvParameters)
 	if(LEDStatus==1) TM_USART_Puts(USART1, "/LED001>\r\n");
 	if(LEDStatus==2) TM_USART_Puts(USART1, "/LED002>\r\n");
 	
+	sprintf(str,"send %3d rev %3d stt %d",turnsend,turnrecv,tcpclient->state);
+	TM_HD44780_Puts(2, 0,str);
+	//if(tcpclient->state==CLIENT_CONNECTED){
+//	sprintf(data_tcp,"(1,%s,%s,1,,12-0-0/1-1-14)",ACM,"01 01 01 01 01 01");
+//	TM_ETHERNETCLIENT_Connect("server",192,168,1,250,8866,&requests_count);
+	//}
+	//else goto bandau;
 	}	
 
 /* xu li W1D0 - dk1*/
@@ -530,8 +558,7 @@ void vMain(void *pvParameters)
 /*xu li 1 tien trinh hoan chinh*/
 	if(Process!=1) TM_HD44780_Puts(0, 2,"Wait for Card\n\r xx"); /* 0 dong 1, 1 dong 2*/
 /*xu li khi co su kien nhan the*/
-if(flag_RFID1==1)
-		{	
+if(flag_RFID1==1){	
 		
 		Process=1;
 		IDCAR1[0]=BufferCom1[4];
@@ -565,8 +592,8 @@ if(flag_RFID1==1)
 		if(UID1 != NULL){
 		sprintf(data_tcp,"(1,%s,%s,1,,12-0-0/1-1-14)",ACM,UID1);
 		TM_ETHERNETCLIENT_Connect("server",192,168,1,250,8866,&requests_count);
+		vTaskDelay(10);
 		TM_USART_Puts(USART3,UID1);
-		memset(data_tcp,'\0',0);
 		memset(UID1,NULL,0);
 		}
 		}
@@ -583,20 +610,18 @@ if(flag_RFID1==1)
 		else Process=0;
 		flag_RFID1=0;	
 		flag_test=0;
-		flag_debug=0;
 	}
-if(flag_RFID2==1)
-		{		
-	}
-		
-if(flag_test==1){
+if(flag_RFID2==1){		
+}
+if(flag_serve==1){
+	flag_serve=0;
+	Serveprocess(0,0);
+}	
+if(flag_test==1) {
 	flag_test=0;
 	ProcessAction();
 }
-if(flag_debug==1){
-	flag_debug=0;
-	ProcessAction();
-}
+
 /* Quan li thoi gian cho tung su kien relay actived*/
 timer_dk1 = timerdk1/2;	
 if (timer_dk1 >= timeout){
@@ -670,7 +695,10 @@ void 	ProcessAction(void){
 		flag_R21=1;
 		timerdk4 =0;
 	}
-	
+	if(strncmp(BufferCom3,"R00",3)==0) // nha the mo relay 4
+	{
+	TM_USART_Puts(USART3,"OK");
+	}
 
 		if(flag_R10)
 	{		// active relay 1
@@ -710,9 +738,11 @@ void 	ProcessAction(void){
 	if(flag_R12||flag_R11 ||flag_W1D0) timer_dk3 = timerdk3;
 
 	if(flag_R22||flag_R21 ||flag_W1D1) timer_dk4 = timerdk4;
-
 }
 
+void 	Serveprocess(char *str,uint8_t lengh){
+	printf_d("Tran Nhat Duc test :\n");
+}
 void 	WaitPC(unsigned int t){
 	unsigned long int n=0;
 	while(n<=t){
@@ -728,7 +758,7 @@ void 	TM_USART3_ReceiveHandler(uint8_t c) {	// PC
 	static uint8_t cnt=0;
 	if(c=='R')cnt=0;
 	BufferCom3[cnt]=c;
-	if(cnt==2){flag_test=1;flag_debug=1;} // recive 3 ki tu.
+	if(cnt==2){flag_test=1;} // recive 3 ki tu.
 	if((cnt==2)&&(Process==1))flag_PC=1;
 	if(cnt<48)cnt++;
 	else cnt =0;
@@ -753,52 +783,80 @@ void 	TM_USART6_ReceiveHandler(uint8_t c) {	// RFID1
 
 uint16_t TM_ETHERNETCLIENT_CreateHeadersCallback(TM_TCPCLIENT_t* connection, char* buffer, uint16_t buffer_length) {
 	sprintf(buffer,"%s",data_tcp);
+	turnsend ++;
 	return strlen(buffer);
 }
 
 void TM_ETHERNETCLIENT_ReceiveDataCallback(TM_TCPCLIENT_t* connection, uint8_t* buffer, uint16_t buffer_length, uint16_t total_length) {
-	uint16_t i = 0;
-	uint8_t* buffer2[60];
+	static int i=0;
+	static const char *s2 = "(,)";
+	static char *buffer1;
+	static char *token;
+	memset(buffer1,0,0);
+	buffer1=(char*)buffer;
+	token = strtok(buffer1,s2);
 	/* We have available data for connection to receive */
 	sprintf(str,"Receiveing %d bytes of data from %s\n", buffer_length, connection->name);
 	printf_d(str);
-	
-//	/* Go through entire buffer, remove response headers */
-//	if (connection->headers_done == 0) {
-//		for (i = 0; i < buffer_length; i++) {
-//			if (
-//				buffer[i] == '\r' &&
-//				buffer[i + 1] == '\n' &&
-//				buffer[i + 2] == '\r' &&
-//				buffer[i + 3] == '\n'
-//			) {
-//				/* Headers done */
-//				connection->headers_done = 1;
-//				/* Increase i */
-//				i += 3;
-//				/* Break */
-//				break;
-//			}
-//		}
-//	}
-	
+	turnrecv++;
+
 	/* Print data */
-	for (; i < buffer_length; i++) {
+	for (i=0;i<buffer_length;i++) {
 		/* Print response */
 		sprintf(str,"%c", buffer[i]);
 		printf_d(str);
+		//revdata[i]=buffer[i];
 	}
-	sprintf(revdata,"%s",buffer);
-	//strncpy ( revdata,buffer,buffer_length);
-//	sprintf(str,"%s", buffer);
-//	printf_d(str);
+	sprintf(str,"thu hien tach :\n");
+	printf_d(str);
+	 /* walk through other tokens */
+   for (i=0;i<6;i++) 
+   {	
+//			sprintf(str,"%s.",token); 
+//			printf_d(str);
+			switch(i){
+				case 0: {
+					sprintf(str,"Code :%s,",token); 
+					printf_d(str);
+				}break;
+				case 1: {
+					sprintf(str,"Name :%s,",token); 
+					printf_d(str);
+				}break;
+				case 2: {
+					sprintf(str,"IDcar :%s,",token); 
+					printf_d(str);
+				}break;
+				case 3: {
+					sprintf(str,"Cong :%s,",token); 
+					printf_d(str);
+				}break;
+				case 4: {
+//					sprintf(str,"%s,",token); 
+//					printf_d(str);
+					Sttup(token);
+				}break;
+				case 5: {
+					sprintf(str,"Date :%s",token); 
+					printf_d(str);
+//					timeup(token);
+				}break;
+				default:break;
+			}
+			token = strtok(NULL, s2);	
+   }
+	memset(buffer1,0,0);
+	memset(buffer,0,0);
+	flag_serve=1;				// xu li trong ham chinh.
 	connection->headers_done = 1;
+	tcpclient=connection;
 }
 
 void TM_ETHERNETCLIENT_ConnectedCallback(TM_TCPCLIENT_t* connection) {
 	/* We are connected */
 	sprintf(str,"We are connected to %s\n", connection->name);
 	printf_d(str);
+	tcpclient=connection;
 }
 
 void TM_ETHERNETCLIENT_ConnectionClosedCallback(TM_TCPCLIENT_t* connection, uint8_t success) {
@@ -812,6 +870,7 @@ void TM_ETHERNETCLIENT_ConnectionClosedCallback(TM_TCPCLIENT_t* connection, uint
 	printf_d(str);
 	}	
 	/* Increase number of requests */
+	tcpclient=connection;
 	requests_count++;
 }
 
@@ -819,12 +878,14 @@ void TM_ETHERNETCLIENT_ErrorCallback(TM_TCPCLIENT_t* connection) {
 	/* Print to user */
 	sprintf(str,"An error occured on connection %s\n", connection->name);
 	printf_d(str);
+	tcpclient=connection;
 }
 
 void TM_ETHERNETCLIENT_ConnectionStartedCallback(TM_TCPCLIENT_t* connection) {
 	/* Print to user */
 	sprintf(str,"Connection %s has started\n", connection->name);
 	printf_d(str);
+	tcpclient=connection;
 }
 
 /* DNS has IP */
@@ -958,8 +1019,11 @@ void TM_ETHERNET_LinkIsUpCallback(void) {
 		//sprintf(str,"Link is up back\n");
 		//TM_USART_Puts(USART3,str);
 }
+void TM_ETHERNET_SystemResetCallback(void) {
+		TM_ETHERNET_Init(NULL, ipadress, getwayadress, netmaskadress);
+}
 /* Delay 1ms handler */
-void TM_DELAY_1msHandler(void) {
+ void TM_DELAY_1msHandler(void) {
 	/* Time update for ethernet, 1ms */
 	/* Add 1ms time for ethernet */
 	TM_ETHERNET_TimeUpdate(1);
@@ -1139,23 +1203,25 @@ void 	read_sw_add(void){
 	if(GPIO_ReadInputDataBit(ADD_BIT7_PORT,ADD_BIT7_PIN)==0) sw_add[7] = 1;
 			else sw_add[7] = 0;
 
-	value_dip= 1*sw_add[0]+2*sw_add[1]+4*sw_add[2]+8*sw_add[3]+16*sw_add[4]+32*sw_add[5]+64*sw_add[6]+128*sw_add[7];
-	if(value_dip == 0) value_dip=60; 
+	value_dip = 1*sw_add[7]+2*sw_add[6]+4*sw_add[5]+8*sw_add[4]+16*sw_add[3]+32*sw_add[2]+64*sw_add[1]+128*sw_add[0];
+	//if(value_dip == 0) value_dip=60; 
 }
-static int 	turn_on_dk1(){
+static int 	turn_on_dk1(void){
 	if(!LEDStatus){
 	TM_GPIO_SetPinHigh(RELAY_DK1_PORT,RELAY_DK1_PIN);
+	TM_GPIO_SetPinHigh(RELAY_DK2_PORT,RELAY_DK2_PIN);
 	LEDStatus=1;
 	return 1;
 	}
 	else return 0;
 }
-static int 	turn_off_dk1(){
+static int 	turn_off_dk1(void){
 	TM_GPIO_SetPinLow(RELAY_DK1_PORT,RELAY_DK1_PIN);
+	TM_GPIO_SetPinLow(RELAY_DK2_PORT,RELAY_DK2_PIN);
 	LEDStatus=0;
 	return 0;
 }
-static int		turn_on_dk2(){
+static int		turn_on_dk2(void){
 	if(!LEDStatus){
 	TM_GPIO_SetPinHigh(RELAY_DK2_PORT,RELAY_DK2_PIN);
 	LEDStatus=2;
@@ -1163,35 +1229,27 @@ static int		turn_on_dk2(){
 	}
 	else return 0;
 }
-static int 	turn_off_dk2(){
+static int 	turn_off_dk2(void){
 	TM_GPIO_SetPinLow(RELAY_DK2_PORT,RELAY_DK2_PIN);
 	LEDStatus=0;
 	return 0;
 }
-static int		turn_off_dk3(){
+static int		turn_off_dk3(void){
 	TM_GPIO_SetPinHigh(RELAY_DK3_PORT,RELAY_DK3_PIN);
 	return 0;
 }
-static int 	turn_on_dk3(){
+static int 	turn_on_dk3(void){
 	TM_GPIO_SetPinLow(RELAY_DK3_PORT,RELAY_DK3_PIN);
 	return 0;
 }
-static int		turn_off_dk4(){
+static int		turn_off_dk4(void){
 	TM_GPIO_SetPinHigh(RELAY_DK4_PORT,RELAY_DK4_PIN);
 	return 0;
 }
-static int 	turn_on_dk4(){
+static int 	turn_on_dk4(void){
 	TM_GPIO_SetPinLow(RELAY_DK4_PORT,RELAY_DK4_PIN);
 	return 0;
 }
-//int 	set_485_send(){
-//	TM_GPIO_SetPinHigh(CCU_DIR_PORT,CCU_DIR_PIN);
-//	return 0;
-//}
-//int 	set_485_recv(){
-//	TM_GPIO_SetPinLow(CCU_DIR_PORT,CCU_DIR_PIN);
-//	return 0;
-//}
 int 	check_vip(char * name){
 	int i =0;
 	for(i=0;i<2;i++){
@@ -1210,4 +1268,34 @@ void updatime(uint8_t h,uint8_t m,uint8_t s,uint8_t d,uint8_t mon,uint8_t year){
 			/* Set new time */
 			TM_RTC_SetDateTime(&datatime, TM_RTC_Format_BIN);
 }
-/* End code*/
+void Sttup(char * buffer){
+		static int i=0;
+		static const char *s2 = "-";
+		static char *token;
+		static char *buffer1;
+		buffer1=buffer;
+		token = strtok(buffer1,s2);
+					   for (i=0;i<5;i++) {
+							sprintf(str,"STT%d :%s,",i,token); 
+							printf_d(str);
+							token = strtok(NULL, s2);
+						 }
+}
+void timeup(char * buffer){
+		static uint8_t h, m, s, d, mon, year;
+		static int i=0;
+		static const char *s2 = "-";
+		static char *token;
+		static char *buffer1;
+		buffer1=buffer;
+									sprintf(str,"test buffer time :%s",buffer); 
+							printf_d(str);
+		token = strtok(buffer1,s2);
+					   for (i=0;i<6;i++) {
+							sprintf(str,"timeup%d :%s,",i,token); 
+							printf_d(str);
+							token = strtok(NULL, s2);
+						 }
+		updatime(h,m,s,d,mon,year);
+}
+

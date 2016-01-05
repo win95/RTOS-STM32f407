@@ -250,7 +250,6 @@ TM_ETHERNET_Result_t TM_ETHERNETCLIENT_Connect(char* conn_name, uint8_t ip1, uin
 	
 	/* Try to Connect */
 	e = tcp_echoclient_connect(conn_name, ip1, ip2, ip3, ip4, port, user_parameters);
-	
 	if (e == ERR_RST) {
 		/* We need system reset here */
 		/* If user want's to implement it, otherwise problems can happen */
