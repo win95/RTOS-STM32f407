@@ -75,10 +75,10 @@ char BufferCom2[64];
 char BufferCom3[64];
 /*Khoi Rtc*/
 TM_RTC_Time_t datatime;
-void updatime(uint8_t h,uint8_t m,uint8_t s,uint8_t d,uint8_t mon,uint8_t year);
+static void updatime(uint8_t h,uint8_t m,uint8_t s,uint8_t d,uint8_t mon,uint8_t year);
 unsigned char fag_updatime=0;
-void Sttup(char * buffer);
-void timeup(char * buffer);
+static void Sttup(char * buffer);
+static void Timeup(char * buffer);
 /*Khoi SW*/
 void read_sw_add(void);
 unsigned char value_dip =0; /* value DIP switch*/
@@ -92,20 +92,50 @@ typedef struct {	/* Create simple typedef for DNS controlling */
 
 TM_DNS_t MyDNS;
 uint16_t requests_count = 1;
-uint8_t ipadress[4]={192,168,1,121};
-uint8_t getwayadress[4]={192,168,1,1};
-uint8_t netmaskadress[4]={255,255,255,0};
+uint8_t macaddress[24][6]	=	{
+															{0x00,0xE0,0x69,0xF0,0x00,0x01}, 	//1
+															{0x00,0xE0,0x69,0xF0,0x00,0x02},	
+															{0x00,0xE0,0x69,0xF0,0x00,0x03},
+															{0x00,0xE0,0x69,0xF0,0x00,0x04},
+															{0x00,0xE0,0x69,0xF0,0x00,0x05},	//5
+															{0x00,0xE0,0x69,0xF0,0x00,0x06},
+															{0x00,0xE0,0x69,0xF0,0x00,0x07},
+															{0x00,0xE0,0x69,0xF0,0x00,0x08},
+															{0x00,0xE0,0x69,0xF0,0x00,0x09},
+															{0x00,0xE0,0x69,0xF0,0x00,0x0A},	//10
+															{0x00,0xE0,0x69,0xF0,0x00,0x0B},
+															{0x00,0xE0,0x69,0xF0,0x00,0x0C},
+															{0x00,0xE0,0x69,0xF0,0x00,0x0D},
+															{0x00,0xE0,0x69,0xF0,0x00,0x0E},
+															{0x00,0xE0,0x69,0xF0,0x00,0x0F},	//15
+															{0x00,0xE0,0x69,0xF0,0x00,0x10},
+															{0x00,0xE0,0x69,0xF0,0x00,0x11},
+															{0x00,0xE0,0x69,0xF0,0x00,0x12},
+															{0x00,0xE0,0x69,0xF0,0x00,0x13},
+															{0x00,0xE0,0x69,0xF0,0x00,0x14},	//20
+															{0x00,0xE0,0x69,0xF0,0x00,0x15},
+															{0x00,0xE0,0x69,0xF0,0x00,0x16},
+															{0x00,0xE0,0x69,0xF0,0x00,0x17},
+															{0x00,0xE0,0x69,0xF0,0x00,0x18},	//24
+														};
+uint8_t ipadress[4]=		{192,168,1,121};
+uint8_t getwayadress[4]=	{192,168,1,1};
+uint8_t netmaskadress[4]=	{255,255,255,0};
 //char revdata[100];
 //uint8_t lenrevdata=0;
+unsigned int status_sv=0;
 TM_TCPCLIENT_t *tcpclient;
 /*Khoi process*/
-unsigned char  Process=0;
+unsigned char  Process_1=0;
+unsigned char  Process_2=0;
 /*Khoi RFID*/
 unsigned char flag_RFID = 0;	/*Send SelectCard */		
 unsigned char flag_RFID1=0;
 unsigned char flag_RFID2=0;
-char SelectCard[4]= {0xBA,0x02,0x01,0xB9};       
-char IDCAR1[7]={0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+char SelectCard[4]= {0xBA,0x02,0x01,0xB9};
+char Carpull[7]	=	{0x7F,0x40,0x01,0x20,0x0D,0xC0,0x00};
+char Carpush[7]	=	{0x7F,0x40,0x01,0x21,0x8D,0xC5,0x00};	
+char IDCAR1[7]	=	{0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 char UID1[30];
 /*Khoi Action*/
 void 	ProcessAction(void);
@@ -113,11 +143,12 @@ void 	Serveprocess(char *str,uint8_t lengh);
 /*Khoi Wait*/	
 void WaitPC(unsigned int t);
 unsigned char flag_PC=0;
+unsigned char flag_SV=0;
 /*Khoi VIP*/
 char *vip_id[3] = {
 	"b7 7b 87 52",
 	"04 4f 97 c6",
-	"01 12 34 45",
+	"bc 71 85 49",
 	};
 /*time out*/
 unsigned int timeout = 0	;
@@ -144,7 +175,7 @@ unsigned char flag_R11 =0;	// active relay 3
 unsigned char flag_R21 =0;	// active relay 4
 unsigned char flag_test=0;	// su dung khi gui lenh test tu cong com 
 unsigned char flag_serve=0;	// su dung khi nhan lenh tu server
-int check_vip(char * name);
+static int check_vip(char * name);
 /* Khoi OUTPUT*/
 static int turn_on_dk1(void);
 static int turn_off_dk1(void);
@@ -173,6 +204,14 @@ xTimerHandle xTimers[ NUM_TIMERS ];
 long lExpireCounters[ NUM_TIMERS ] = { 0 };
 void vTimerCallback1( xTimerHandle  pxTimer );
 void vTimerCallback2( xTimerHandle  pxTimer );
+void vTimerCallback3( xTimerHandle  pxTimer );
+void vTimerCallback4( xTimerHandle  pxTimer );
+/*Khoi Wiegand*/
+uint8_t 				flag_finish_1 = 1,	flag_finish_2 = 1;
+__IO uint64_t 	card_1 = 0, 				card_2 = 0;
+__IO uint8_t  	count_1 = 0, 				count_2 = 0;
+uint8_t crc_26bit(uint32_t allnum_bit,uint32_t wiegand);
+uint8_t crc_34bit(uint32_t allnum_bit,uint64_t wiegand);
 
 #define STACK_SIZE_MIN	128	/* usStackDepth	- the stack size DEFINED IN WORDS.*/
 const signed char timer_xx[] = "Timer";
@@ -190,11 +229,23 @@ int main(void)
                                           vTimerCallback1     // Each timer calls the same callback when it expires.
                                       );		
           xTimers[2] = xTimerCreate(timer_xx,         // Just a text name, not used by the kernel.
-                                          (200/ portTICK_RATE_MS),     // The timer period in ticks.
+                                          (150/ portTICK_RATE_MS),     // The timer period in ticks.
                                           pdTRUE,         // The timers will auto-reload themselves when they expire.
                                           (void*)2,     // Assign each timer a unique id equal to its array index.
                                           vTimerCallback2     // Each timer calls the same callback when it expires.
-                                      );																						
+                                      );
+          xTimers[3] = xTimerCreate(timer_xx,         // Just a text name, not used by the kernel.
+                                          (50/ portTICK_RATE_MS),     // The timer period in ticks.
+                                          pdTRUE,         // The timers will auto-reload themselves when they expire.
+                                          (void*)3,     // Assign each timer a unique id equal to its array index.
+                                          vTimerCallback3     // Each timer calls the same callback when it expires.
+                                      );
+          xTimers[4] = xTimerCreate(timer_xx,         // Just a text name, not used by the kernel.
+                                          (50/ portTICK_RATE_MS),     // The timer period in ticks.
+                                          pdTRUE,         // The timers will auto-reload themselves when they expire.
+                                          (void*)4,     // Assign each timer a unique id equal to its array index.
+                                          vTimerCallback4     // Each timer calls the same callback when it expires.
+                                      );																					
 					if( xTimers[1] != NULL )
           {
               // Start the timer.  No block time is specified, and even if one was
@@ -211,6 +262,26 @@ int main(void)
               // it would be ignored because the scheduler has not yet been
               // started.
               if( xTimerStart( xTimers[2], 0 ) != pdPASS )
+              {
+                  // The timer could not be set into the Active state.
+              }
+						}
+					if( xTimers[3] != NULL )
+          {
+              // Start the timer.  No block time is specified, and even if one was
+              // it would be ignored because the scheduler has not yet been
+              // started.
+              if( xTimerStart( xTimers[3], 0 ) != pdPASS )
+              {
+                  // The timer could not be set into the Active state.
+              }
+						}
+					if( xTimers[4] != NULL )
+          {
+              // Start the timer.  No block time is specified, and even if one was
+              // it would be ignored because the scheduler has not yet been
+              // started.
+              if( xTimerStart( xTimers[4], 0 ) != pdPASS )
               {
                   // The timer could not be set into the Active state.
               }
@@ -237,12 +308,21 @@ int main(void)
 	TM_GPIO_Init(RELAY_DK2_PORT, RELAY_DK2_PIN, TM_GPIO_Mode_OUT, TM_GPIO_OType_PP, TM_GPIO_PuPd_NOPULL, TM_GPIO_Speed_High);
 	TM_GPIO_Init(RELAY_DK3_PORT, RELAY_DK3_PIN, TM_GPIO_Mode_OUT, TM_GPIO_OType_PP, TM_GPIO_PuPd_NOPULL, TM_GPIO_Speed_High);
 	TM_GPIO_Init(RELAY_DK4_PORT, RELAY_DK4_PIN, TM_GPIO_Mode_OUT, TM_GPIO_OType_PP, TM_GPIO_PuPd_NOPULL, TM_GPIO_Speed_High);
-	/* init OUTPUT*/
+	/* init OUTPUT*/	
 	STM_EVAL_LEDInit(LED_ORANGE);
+		/*init SWADD*/
+	TM_GPIO_Init(ADD_BIT0_PORT, ADD_BIT0_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);	
+	TM_GPIO_Init(ADD_BIT1_PORT, ADD_BIT1_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
+	TM_GPIO_Init(ADD_BIT2_PORT, ADD_BIT2_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
+	TM_GPIO_Init(ADD_BIT3_PORT, ADD_BIT3_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
+	TM_GPIO_Init(ADD_BIT4_PORT, ADD_BIT4_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
+	TM_GPIO_Init(ADD_BIT5_PORT, ADD_BIT5_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
+	TM_GPIO_Init(ADD_BIT6_PORT, ADD_BIT6_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
+	TM_GPIO_Init(ADD_BIT7_PORT, ADD_BIT7_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
 /* Initialize USART6 at 115200 baud, TX: PC6, RX: PC7 , COM 1 - RFID1 gan cong tac nguon*/ 
 	TM_USART_Init(USART6, TM_USART_PinsPack_1, 115200);
 /* Initialize USART3 at 115200 baud, TX: PD8, RX: PD9 ,	COM 2 -PC gan ethernet*/
-	TM_USART_Init(USART3, TM_USART_PinsPack_3, 115200);
+	TM_USART_Init(USART3, TM_USART_PinsPack_3, 9600);
 /* Initialize USART1 at 115200 baud, TX: PA9, RX: PA10, CONG 485 */
 	TM_USART_Init(USART1, TM_USART_PinsPack_1, 9600);
 if (!TM_RTC_Init(TM_RTC_ClockSource_Internal)) {
@@ -424,28 +504,23 @@ void vLedBlinkRed(void *pvParameters)
 		TM_WATCHDOG_Reset();
 	for(;;)
 	{
-		
 		if(tcpclient->state==CLIENT_CONNECTED){
 		STM_EVAL_LEDToggle(LED_ORANGE);
 		vTaskDelay(100 / portTICK_RATE_MS );
-		}else
-		if(tcpclient->state==CLIENT_NOT_CONNECTED){
-		STM_EVAL_LEDToggle(LED_ORANGE);
-		vTaskDelay(50 / portTICK_RATE_MS );
-		}else
-		if(tcpclient->state==CLIENT_CLOSING){
+		}else{
 		STM_EVAL_LEDToggle(LED_ORANGE);
 		vTaskDelay(50 / portTICK_RATE_MS );
 		}
-TM_WATCHDOG_Reset();		
+	TM_WATCHDOG_Reset();		
 	}
 }
 
 void vEthernet(void *pvParameters)
 {	
+	read_sw_add();
+	ipadress[3]=ipadress[3]+value_dip;
 	printf_d("Program starting..\n");
-	//TM_USART_Puts(USART3,"Program starting..\n");
-	if (TM_ETHERNET_Init(NULL, ipadress, getwayadress, netmaskadress) == TM_ETHERNET_Result_Ok) {
+	if (TM_ETHERNET_Init(macaddress[value_dip],ipadress, getwayadress, netmaskadress) == TM_ETHERNET_Result_Ok) {
 	printf_d("TM_ETHERNET_Init OK \n");
 	}
 
@@ -453,8 +528,7 @@ void vEthernet(void *pvParameters)
 	TM_WATCHDOG_Reset();
 	for(;;)
 	{
-//		vTaskDelay( 250 / portTICK_RATE_MS );
-				/* Update ethernet, call this as fast as possible */
+		/* Update ethernet, call this as fast as possible */
 		TM_ETHERNET_Update();
 		/* Reset watchdog */
 		TM_WATCHDOG_Reset();
@@ -478,15 +552,8 @@ void vMain(void *pvParameters)
 		TM_EXTI_Attach(W2_D1_PORT, W2_D1_PIN, TM_EXTI_Trigger_Falling);
 		TM_EXTI_Attach(W1_D1_PORT, W1_D1_PIN, TM_EXTI_Trigger_Rising);
 		TM_EXTI_Attach(W1_D0_PORT, W1_D0_PIN, TM_EXTI_Trigger_Rising);
-		/*init SWADD*/
-	TM_GPIO_Init(ADD_BIT0_PORT, ADD_BIT0_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);	
-	TM_GPIO_Init(ADD_BIT1_PORT, ADD_BIT1_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
-	TM_GPIO_Init(ADD_BIT2_PORT, ADD_BIT2_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
-	TM_GPIO_Init(ADD_BIT3_PORT, ADD_BIT3_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
-	TM_GPIO_Init(ADD_BIT4_PORT, ADD_BIT4_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
-	TM_GPIO_Init(ADD_BIT5_PORT, ADD_BIT5_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
-	TM_GPIO_Init(ADD_BIT6_PORT, ADD_BIT6_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
-	TM_GPIO_Init(ADD_BIT7_PORT, ADD_BIT7_PIN, TM_GPIO_Mode_IN, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_Medium);
+	/*init interrup OPT*/
+		TM_EXTI_Attach(OPT_PORT, 	OPT_PIN, TM_EXTI_Trigger_Falling);
 /* int DIR 485 set = send , reset = recvice*/ 
 	TM_GPIO_Init(CCU_DIR_PORT, CCU_DIR_PIN, TM_GPIO_Mode_OUT, TM_GPIO_OType_PP, TM_GPIO_PuPd_UP, TM_GPIO_Speed_High);
 	TM_GPIO_SetPinHigh(CCU_DIR_PORT,CCU_DIR_PIN);
@@ -495,7 +562,7 @@ void vMain(void *pvParameters)
 	TM_GPIO_SetPinLow(HD44780_RW_PORT,HD44780_RW_PIN);
 	read_sw_add();
 	sprintf(ACM,"ACM%d",value_dip);
-	timeout = 60;
+	timeout = 3;
 	memset(str,'\0',0);
 	//Initialize LCD 20 cols x 4 rows
 	TM_HD44780_Init(16, 4);
@@ -506,21 +573,45 @@ void vMain(void *pvParameters)
 	TM_HD44780_Puts(0, 2, "Welcome");
 	vTaskDelay(2000);
 	TM_HD44780_Clear();
-	sprintf(str,"Timerout %d", timeout);
-	TM_HD44780_Puts(0, 0,str);
-	vTaskDelay(2000);
-	sprintf(str,"ACM: %5s", ACM);
-	TM_HD44780_Puts(0, 0,str);
+	sprintf(buffer_lcd,"Timerout %d", timeout);
+	TM_HD44780_Puts(0, 0,buffer_lcd);
 	vTaskDelay(2000);
 	TM_HD44780_Clear();
-	TM_HD44780_Puts(0, 0,"----TIS8 PRO----");
+	/* Print MAC address to user */
+	sprintf(buffer_lcd,"ACM:%s ->IP\n\r%d.%d.%d.%d\n\r%02X-%02X-%02X\n\r%02X-%02X-%02X",
+		ACM,
+		TM_ETHERNET_GetLocalIP(0),
+		TM_ETHERNET_GetLocalIP(1),
+		TM_ETHERNET_GetLocalIP(2),
+		TM_ETHERNET_GetLocalIP(3),
+		TM_ETHERNET_GetMACAddr(0),
+		TM_ETHERNET_GetMACAddr(1),
+		TM_ETHERNET_GetMACAddr(2),
+		TM_ETHERNET_GetMACAddr(3),
+		TM_ETHERNET_GetMACAddr(4),
+		TM_ETHERNET_GetMACAddr(5)
+	);
+	TM_HD44780_Puts(0, 0,buffer_lcd);
+	vTaskDelay(3000);
+	TM_HD44780_Clear();
+	sprintf(buffer_lcd,"GW:%d.%d.%d.%d\n\rNet%d.%d.%d.%d",
+		TM_ETHERNET_GetGateway(0),
+		TM_ETHERNET_GetGateway(1),
+		TM_ETHERNET_GetGateway(2),
+		TM_ETHERNET_GetGateway(3),
+		TM_ETHERNET_GetNetmask(0),
+		TM_ETHERNET_GetNetmask(1),
+		TM_ETHERNET_GetNetmask(2),
+		TM_ETHERNET_GetNetmask(3)
+	);
+	TM_HD44780_Puts(0, 0,buffer_lcd);
+	vTaskDelay(3000);
+	TM_HD44780_Clear();
 	flag_RFID2=0;	
 	flag_RFID1=0;
 // configure role mo rong
 	turn_off_dk3();
 	turn_off_dk4();
-	//tcpclient->state=0;
-	bandau:
 	sprintf(data_tcp,"(1,%s,00 00 00 00 00 00 00,1,,12-0-0/1-1-14)",ACM);
 	vTaskDelay(10);
 	TM_ETHERNETCLIENT_Connect("server",192,168,1,250,8866,&requests_count);
@@ -535,14 +626,8 @@ void vMain(void *pvParameters)
 	if(LEDStatus==0) TM_USART_Puts(USART1, "/LED000>\r\n");
 	if(LEDStatus==1) TM_USART_Puts(USART1, "/LED001>\r\n");
 	if(LEDStatus==2) TM_USART_Puts(USART1, "/LED002>\r\n");
-	
-	sprintf(str,"send %3d rev %3d stt %d",turnsend,turnrecv,tcpclient->state);
-	TM_HD44780_Puts(2, 0,str);
-	//if(tcpclient->state==CLIENT_CONNECTED){
-//	sprintf(data_tcp,"(1,%s,%s,1,,12-0-0/1-1-14)",ACM,"01 01 01 01 01 01");
-//	TM_ETHERNETCLIENT_Connect("server",192,168,1,250,8866,&requests_count);
-	//}
-	//else goto bandau;
+		sprintf(buffer_lcd,"Send: %03d\n\rRev %03d Stt %d",turnsend,turnrecv,tcpclient->state);
+		TM_HD44780_Puts(0, 0,buffer_lcd);
 	}	
 
 /* xu li W1D0 - dk1*/
@@ -556,11 +641,11 @@ void vMain(void *pvParameters)
 		turn_on_dk4();
 	}
 /*xu li 1 tien trinh hoan chinh*/
-	if(Process!=1) TM_HD44780_Puts(0, 2,"Wait for Card\n\r xx"); /* 0 dong 1, 1 dong 2*/
+	if(Process_1!=1 && Process_2!=1) TM_HD44780_Puts(0, 2,"Wait for Card\n\r xx"); /* 0 dong 1, 1 dong 2*/
 /*xu li khi co su kien nhan the*/
-if(flag_RFID1==1){	
-		
-		Process=1;
+if(flag_RFID1==1){			
+		Process_1=1;
+		Process_2=1;
 		IDCAR1[0]=BufferCom1[4];
 		IDCAR1[1]=BufferCom1[5];
 		IDCAR1[2]=BufferCom1[6];
@@ -581,33 +666,50 @@ if(flag_RFID1==1){
 		vTaskDelay(20);
 		if(check_vip(UID1)){
 			flag_PC=1;
+			flag_SV=1;
 			flag_R10=1;
 			timerdk1 =0;
 			flag_R21=1;
 			timerdk4 =0;
-			Process=0;
+			Process_1=0;
+			Process_2=0;
 		}
 		else{
-		if(Process){
-		if(UID1 != NULL){
-		sprintf(data_tcp,"(1,%s,%s,1,,12-0-0/1-1-14)",ACM,UID1);
-		TM_ETHERNETCLIENT_Connect("server",192,168,1,250,8866,&requests_count);
-		vTaskDelay(10);
-		TM_USART_Puts(USART3,UID1);
-		memset(UID1,NULL,0);
+		if(Process_1){
+			if(UID1 != NULL){
+				vTaskDelay(10);
+				TM_USART_Puts(USART3,UID1);
+				memset(UID1,NULL,0);
+			}
 		}
+		if(Process_2){
+			if(UID1 != NULL){
+				sprintf(data_tcp,"(1,%s,%s,1,,%d-%d-%d/%d-%d-%d)",ACM,UID1,datatime.hours,datatime.minutes,datatime.seconds,datatime.date,datatime.month,datatime.year);
+				TM_ETHERNETCLIENT_Connect("server",192,168,1,250,8866,&requests_count);
+				vTaskDelay(10);
+				memset(UID1,NULL,0);
+			}
 		}
 		}
 		WaitPC(200);
 		flag_RFID1=0;
-		if(flag_PC)
-		{
+		
+		if(flag_PC){
 			TM_HD44780_Puts(0, 2,"Door opened.."); /* 0 dong 1, 1 dong 2*/
 			flag_PC=0;
 			ProcessAction();
 			WaitPC(10);
 		}
-		else Process=0;
+		else Process_1=0;
+		
+		if(flag_SV){ // duoc bat len trong luc cho doi.
+			TM_HD44780_Puts(0, 2,"Door opened.."); /* 0 dong 1, 1 dong 2*/
+			flag_SV=0;
+			ProcessAction();
+			WaitPC(10);
+		}
+		else Process_2=0;
+		
 		flag_RFID1=0;	
 		flag_test=0;
 	}
@@ -632,7 +734,8 @@ if (timer_dk1 >= timeout){
 			timer_dk1=0;
 			flag_RFID1=0;
 			flag_RFID2=0;
-			Process=0;
+			Process_1=0;
+			Process_2=0;
 			WaitPC(200);
 		}
 timer_dk2 = timerdk2/2;
@@ -643,7 +746,8 @@ if (timer_dk2 >= timeout){
 			flag_W1D1=0;
 			timerdk2=0;
 			timer_dk2=0;
-			Process=0;
+			Process_1=0;
+			Process_2=0;
 			WaitPC(100);
 		}
 timer_dk3 = timerdk3;
@@ -653,7 +757,7 @@ if (timer_dk3 >= 4){
 			flag_R12 =0;
 			timerdk3=0;
 			timer_dk3=0;
-			if(LEDStatus==0) {Process=0;WaitPC(100);}
+			if(LEDStatus==0) {Process_1=0;Process_2=0;WaitPC(100);}
 		}
 timer_dk4 = timerdk4;
 if (timer_dk4 >= 4){
@@ -662,7 +766,7 @@ if (timer_dk4 >= 4){
 			flag_R22 =0;
 			timer_dk4=0;
 			timerdk4=0;
-			if(LEDStatus==0) {Process=0;WaitPC(100);}
+			if(LEDStatus==0) {Process_1=0;Process_2=0;WaitPC(100);}
 		}
 
 
@@ -695,11 +799,34 @@ void 	ProcessAction(void){
 		flag_R21=1;
 		timerdk4 =0;
 	}
-	if(strncmp(BufferCom3,"R00",3)==0) // nha the mo relay 4
+		if(strncmp(BufferCom3,"R00",3)==0) // TEST
 	{
 	TM_USART_Puts(USART3,"OK");
 	}
-
+		if(status_sv==1)				//mo relay 1 va 3
+	{
+		flag_R10=1;
+		timerdk1 =0;
+		flag_R11=1;
+		timerdk3 =0;
+	}
+		if(status_sv==2)				//mo relay 1 va 4
+	{
+		flag_R10=1;
+		timerdk1 =0;
+		flag_R21=1;
+		timerdk4 =0;		
+	}
+		if(status_sv==3)				// mo relay 3
+	{
+		flag_R11=1;
+		timerdk3 =0;		
+	}	
+		if(status_sv==4)				// mo relay 4
+	{
+		flag_R21=1;
+		timerdk4 =0;		
+	}
 		if(flag_R10)
 	{		// active relay 1
 		turn_on_dk1();
@@ -716,15 +843,15 @@ void 	ProcessAction(void){
 	{	// active relay 4
 		turn_on_dk4();
 	}
-	/* xu li flag_R31 - dk2 tu com1*/
+	/* */
 	if(flag_R31){
 		turn_on_dk2();
 	}
-/* xu li flag_R12 - dk3 tu com1*/
+/* */
 	if(flag_R12){
 		turn_on_dk3();
 	}
-/* xu li flag_R22 - dk4 tu com1*/
+/* */
 	if(flag_R22){
 		turn_on_dk4();
 	}
@@ -747,7 +874,7 @@ void 	WaitPC(unsigned int t){
 	unsigned long int n=0;
 	while(n<=t){
 		vTaskDelay(10);
-	if(flag_PC==1)
+	if(flag_PC==1||flag_SV==1)
 		{
 			break;
 		}
@@ -759,13 +886,9 @@ void 	TM_USART3_ReceiveHandler(uint8_t c) {	// PC
 	if(c=='R')cnt=0;
 	BufferCom3[cnt]=c;
 	if(cnt==2){flag_test=1;} // recive 3 ki tu.
-	if((cnt==2)&&(Process==1))flag_PC=1;
+	if((cnt==2)&&(Process_1==1))flag_PC=1;
 	if(cnt<48)cnt++;
 	else cnt =0;
-	
-//	//		/* Try to make a new connection, port 80 */
-//	if (TM_ETHERNETCLIENT_Connect("server",192,168,1,108,8081, "./index.txt") != TM_ETHERNET_Result_Ok) {
-//	}
 }
 void 	TM_USART6_ReceiveHandler(uint8_t c) {	// RFID1
 	static uint8_t cnt=0;
@@ -773,14 +896,11 @@ void 	TM_USART6_ReceiveHandler(uint8_t c) {	// RFID1
 	BufferCom1[cnt]=c;
 	if((BufferCom1[3]==0x00)&&(cnt==BufferCom1[3]+1)&&cnt)
 	{
-		if(Process==0)flag_RFID1=1;
+		if(Process_1==0 && Process_2==0)flag_RFID1=1;
 		memset(BufferCom1,'\0',0);
 	}
 	if(cnt<48)cnt++;
-
 }
-
-
 uint16_t TM_ETHERNETCLIENT_CreateHeadersCallback(TM_TCPCLIENT_t* connection, char* buffer, uint16_t buffer_length) {
 	sprintf(buffer,"%s",data_tcp);
 	turnsend ++;
@@ -832,14 +952,15 @@ void TM_ETHERNETCLIENT_ReceiveDataCallback(TM_TCPCLIENT_t* connection, uint8_t* 
 					printf_d(str);
 				}break;
 				case 4: {
-//					sprintf(str,"%s,",token); 
-//					printf_d(str);
-					Sttup(token);
+					sprintf(str,"%s,",token); 
+					//printf_d(str);
+					Sttup("1-20-330-560-60");
+					vTaskDelay(10);
 				}break;
 				case 5: {
-					sprintf(str,"Date :%s",token); 
+					sprintf(str,"%s",token); 
 					printf_d(str);
-//					timeup(token);
+					Timeup(str);
 				}break;
 				default:break;
 			}
@@ -890,36 +1011,36 @@ void TM_ETHERNETCLIENT_ConnectionStartedCallback(TM_TCPCLIENT_t* connection) {
 
 /* DNS has IP */
 void TM_ETHERNETDNS_FoundCallback(char* host_name, uint8_t ip_addr1, uint8_t ip_addr2, uint8_t ip_addr3, uint8_t ip_addr4) {
-	/* If host name is stm32f4-discovery.com */
-	if (strstr(host_name, "stm32f4-discovery.com")) {
-		/* We have IP */
-		MyDNS.HaveIP = 1;
-		/* Save IP */
-		MyDNS.ip[0] = ip_addr1;
-		MyDNS.ip[1] = ip_addr2;
-		MyDNS.ip[2] = ip_addr3;
-		MyDNS.ip[3] = ip_addr4;
-		/* We are not working anymore */
-		MyDNS.Working = 0;
+//	/* If host name is stm32f4-discovery.com */
+//	if (strstr(host_name, "stm32f4-discovery.com")) {
+//		/* We have IP */
+//		MyDNS.HaveIP = 1;
+//		/* Save IP */
+//		MyDNS.ip[0] = ip_addr1;
+//		MyDNS.ip[1] = ip_addr2;
+//		MyDNS.ip[2] = ip_addr3;
+//		MyDNS.ip[3] = ip_addr4;
+//		/* We are not working anymore */
+//		MyDNS.Working = 0;
 		
-		/* Print to user */
-		sprintf(str,"We have IP address for %s: %d.%d.%d.%d\n", host_name, ip_addr1, ip_addr2, ip_addr3, ip_addr4);
-		printf_d(str);
-	}
+//		/* Print to user */
+//		sprintf(str,"We have IP address for %s: %d.%d.%d.%d\n", host_name, ip_addr1, ip_addr2, ip_addr3, ip_addr4);
+//		printf_d(str);
+//	}
 }
 
 /* DNS error callback */
 void TM_ETHERNETDNS_ErrorCallback(char* host_name) {
-	/* If host name is stm32f4-discovery.com */
-	if (strstr(host_name, "stm32f4-discovery.com")) {
-		/* We have IP */
-		MyDNS.HaveIP = 0;
-		/* We are not working anymore */
-		MyDNS.Working = 0;
-	}
-	/* Print to user */
-	sprintf(str,"DNS has failed to get IP address for %s\n", host_name);
-	printf_d(str);
+//	/* If host name is stm32f4-discovery.com */
+//	if (strstr(host_name, "stm32f4-discovery.com")) {
+//		/* We have IP */
+//		MyDNS.HaveIP = 0;
+//		/* We are not working anymore */
+//		MyDNS.Working = 0;
+//	}
+//	/* Print to user */
+//	sprintf(str,"DNS has failed to get IP address for %s\n", host_name);
+//	printf_d(str);
 }
 
 
@@ -953,43 +1074,10 @@ void TM_ETHERNET_IPIsSetCallback(uint8_t ip_addr1, uint8_t ip_addr2, uint8_t ip_
 		TM_ETHERNET_GetMACAddr(4),
 		TM_ETHERNET_GetMACAddr(5)
 	);
-	printf_d(str);
-//	TM_USART_Puts(USART6,"MAC: %02X-%02X-%02X-%02X-%02X-%02X\n",
-//		TM_ETHERNET_GetMACAddr(0),
-//		TM_ETHERNET_GetMACAddr(1),
-//		TM_ETHERNET_GetMACAddr(2),
-//		TM_ETHERNET_GetMACAddr(3),
-//		TM_ETHERNET_GetMACAddr(4),
-//		TM_ETHERNET_GetMACAddr(5)
-//	);
-	/* Print netmask to user */
-	sprintf(str,"Netmask: %d.%d.%d.%d\n",
-		TM_ETHERNET_GetGateway(0),
-		TM_ETHERNET_GetGateway(1),
-		TM_ETHERNET_GetGateway(2),
-		TM_ETHERNET_GetGateway(3)
-	);
-	printf_d(str);
-//	TM_USART_Puts(USART6,"Netmask: %d.%d.%d.%d\n",
-//		TM_ETHERNET_GetGateway(0),
-//		TM_ETHERNET_GetGateway(1),
-//		TM_ETHERNET_GetGateway(2),
-//		TM_ETHERNET_GetGateway(3)
-//	);
-	/* Print gateway to user */
-	sprintf(str,"Gateway: %d.%d.%d.%d\n",
-		TM_ETHERNET_GetNetmask(0),
-		TM_ETHERNET_GetNetmask(1),
-		TM_ETHERNET_GetNetmask(2),
-		TM_ETHERNET_GetNetmask(3)
-	);
-	printf_d(str);
-//	TM_USART_Puts(USART6,"Gateway: %d.%d.%d.%d\n",
-//		TM_ETHERNET_GetNetmask(0),
-//		TM_ETHERNET_GetNetmask(1),
-//		TM_ETHERNET_GetNetmask(2),
-//		TM_ETHERNET_GetNetmask(3)
-//	);
+
+
+
+
 	/* Print 100M link status, 1 = 100M, 0 = 10M */
 	sprintf(str,"Link 100M: %d\n", TM_ETHERNET.speed_100m);
 	printf_d(str);
@@ -1004,20 +1092,12 @@ void TM_ETHERNET_IPIsSetCallback(uint8_t ip_addr1, uint8_t ip_addr2, uint8_t ip_
 void TM_ETHERNET_LinkIsDownCallback(void) {
 	/* This function will be called when ethernet cable will not be plugged */
 	/* It will also be called on initialization if connection is not detected */
-	
-	/* Print to user */
-	//sprintf(str,"Link is down, do you have connected to your modem/router?");
-	//TM_USART_Puts(USART3,str);
 }
 
 void TM_ETHERNET_LinkIsUpCallback(void) {
 	/* Cable has been plugged in back, link is detected */
 	/* I suggest you that you reboot MCU here */
 	/* Do important stuff before */
-	
-	/* Print to user */
-		//sprintf(str,"Link is up back\n");
-		//TM_USART_Puts(USART3,str);
 }
 void TM_ETHERNET_SystemResetCallback(void) {
 		TM_ETHERNET_Init(NULL, ipadress, getwayadress, netmaskadress);
@@ -1028,8 +1108,7 @@ void TM_ETHERNET_SystemResetCallback(void) {
 	/* Add 1ms time for ethernet */
 	TM_ETHERNET_TimeUpdate(1);
 }
-void vTimerCallback1( xTimerHandle  pxTimer )
- {
+void vTimerCallback1( xTimerHandle  pxTimer ){
 	long lArrayIndex;
      /* Optionally do something if the pxTimer parameter is NULL. */
      configASSERT( pxTimer );
@@ -1040,6 +1119,7 @@ void vTimerCallback1( xTimerHandle  pxTimer )
      /* Increment the number of times that pxTimer has expired. */
      lExpireCounters[ lArrayIndex ] += 1;
 		flag_485=1;
+		TM_RTC_GetDateTime(&datatime, TM_RTC_Format_BIN);
 		if(flag_W1D0||flag_R10){
 			timerdk1++;
 		}
@@ -1053,8 +1133,7 @@ void vTimerCallback1( xTimerHandle  pxTimer )
 			timerdk4++;
 		}
  }
-void vTimerCallback2( xTimerHandle  pxTimer )
- {
+void vTimerCallback2( xTimerHandle  pxTimer ){	// mail
 	long lArrayIndex;
      /* Optionally do something if the pxTimer parameter is NULL. */
      configASSERT( pxTimer );
@@ -1066,7 +1145,83 @@ void vTimerCallback2( xTimerHandle  pxTimer )
      lExpireCounters[ lArrayIndex ] += 1;
 		TM_USART_Puts(USART6,SelectCard);
  }
-void 	TM_EXTI_Handler(uint16_t GPIO_Pin) {
+void vTimerCallback3( xTimerHandle  pxTimer ){ 	// Read wiegand 1. 10ms
+		static uint32_t countTimeOut1 = 0;
+		long lArrayIndex;
+     /* Optionally do something if the pxTimer parameter is NULL. */
+     configASSERT( pxTimer );
+
+     /* Which timer expired? */
+     lArrayIndex = ( long ) pvTimerGetTimerID( pxTimer );
+
+     /* Increment the number of times that pxTimer has expired. */
+     lExpireCounters[ lArrayIndex ] += 1;
+		
+		 if(count_1 > 0){
+			 countTimeOut1++;
+		 }
+		 if(crc_34bit(count_1,card_1)){
+			 uint32_t card_buf = 0;
+			 uint8_t buffArrCard[4];
+			 
+				card_1 >>= 1;
+				card_1 &= 0xFFFFFFFF;
+				card_buf = (uint32_t)(card_1&0xFFFFFFFF);
+				buffArrCard[0] = (uint8_t)(card_buf);
+				buffArrCard[1] = (uint8_t)(card_buf >> 8);
+				buffArrCard[2] = (uint8_t)(card_buf >> 16);
+				buffArrCard[3] = (uint8_t)(card_buf >> 24);
+
+				sprintf(str,"%02x %02x %02x %02x",buffArrCard[3],buffArrCard[2],buffArrCard[1],buffArrCard[0]);
+				printf_d(str);
+				countTimeOut1 = 0;
+				card_1 = 0;
+				count_1 = 0;
+				flag_finish_1 = 1;					
+		 }	
+				if(countTimeOut1 >= 5){ // 50ms ( gioi han thoi gian nhan du lieu 
+			 flag_finish_1 = 0;
+			 countTimeOut1 = 0;
+			 card_1 = 0;
+			 count_1 = 0;			 
+			 flag_finish_1 = 1;
+		 }
+ }
+void vTimerCallback4( xTimerHandle  pxTimer ){	// Read wiegang 2. 10ms
+		static uint32_t countTimeOut2 = 0;
+		long lArrayIndex;
+     /* Optionally do something if the pxTimer parameter is NULL. */
+     configASSERT( pxTimer );
+
+     /* Which timer expired? */
+     lArrayIndex = ( long ) pvTimerGetTimerID( pxTimer );
+
+     /* Increment the number of times that pxTimer has expired. */
+     lExpireCounters[ lArrayIndex ] += 1;	
+
+			if(count_2 > 0){
+			 countTimeOut2++;
+			}
+			if(crc_34bit(count_2,card_2)){
+			 uint32_t card_buf = 0;
+			 uint8_t buffArrCard[4];
+			 
+				card_1 >>= 1;
+				card_1 &= 0xFFFFFFFF;
+				card_buf = (uint32_t)(card_1&0xFFFFFFFF);
+				buffArrCard[0] = (uint8_t)(card_buf);
+				buffArrCard[1] = (uint8_t)(card_buf >> 8);
+				buffArrCard[2] = (uint8_t)(card_buf >> 16);
+				buffArrCard[3] = (uint8_t)(card_buf >> 24);
+
+				sprintf(str,"w2,%02X%02X%02X%02X",buffArrCard[3],buffArrCard[2],buffArrCard[1],buffArrCard[0]);
+				countTimeOut2 = 0;
+				card_2 = 0;
+				count_2 = 0;
+				flag_finish_2 = 1;					
+		 }
+ }
+void 	TM_EXTI_Handler(uint16_t GPIO_Pin) {			// Interrupt ext
 	/* Handle external line 0 interrupts */
 	if (GPIO_Pin == DTMF_BIT4_PIN) {
 		
@@ -1137,33 +1292,42 @@ void 	TM_EXTI_Handler(uint16_t GPIO_Pin) {
 	
 //	/* Handle external line 13 interrupts */
 	
-	if (GPIO_Pin == W1_D0_PIN) { /* run W1 D0 - dieu khien RELAY_DK1_PORT , RELAY_DK1_PIN*/	
-		if(!flag_W1D1)
-		{ 
-		flag_W1D0 =1 ;
-		flag_W1D1 =0;
-		timeout = 60;
-		timer_dk1 =0;
-		}
+	if (GPIO_Pin == W1_D0_PIN) { // run W1 D0
+		if(flag_finish_1){
+		card_1 <<= 1;
+		count_1++;	
+	}
+	}
+	if (GPIO_Pin == W1_D1_PIN) {	// run W1 D1
+	if(flag_finish_1){
+		card_1 <<= 1;
+		card_1 |= 1;
+		count_1++;	
+	}
 		
 	}
-	if (GPIO_Pin == W1_D1_PIN) {	/* run W1 D1 - dieu khien RELAY_DK2_PORT , RELAY_DK2_PIN*/
-		if(!flag_W1D0) {
-		flag_W1D1 =1 ;
-		flag_W1D0 =0 ;
-		timeout = 60;
-		timer_dk2 =0;
-		}
-		
+	if (GPIO_Pin == W2_D0_PIN) {
+	if(flag_finish_2){
+		card_2 <<= 1;
+		count_2++;		
 	}
-	if (GPIO_Pin == W2_D1_PIN) { // ngat cac cong 
+	}
+	if (GPIO_Pin == W2_D1_PIN) {
+	if(flag_finish_2){
+		card_2 <<= 1;
+		card_2 |= 1;
+		count_2++;	
+	}
+	}
+
+	if (GPIO_Pin == OPT_PIN) { // ngat cac cong 
 		/* run w2 D1 */
 	timerdk1=(timeout*2);
 	timerdk2=(timeout*2);	
 }
 }
 /* Called on wakeup interrupt RTC*/
-void TM_RTC_RequestHandler() {
+void TM_RTC_RequestHandler() {									// Interrupt rtc
 	/* Get time */
 //	TM_RTC_GetDateTime(&datatime, TM_RTC_Format_BIN);
 //	
@@ -1184,7 +1348,7 @@ void TM_RTC_RequestHandler() {
 	turn_off_dk3();
 	turn_off_dk4();
 }
-void 	read_sw_add(void){
+void 	read_sw_add(void){												// Read switch 8 bit
 	unsigned int sw_add[8];
 	if(GPIO_ReadInputDataBit(ADD_BIT0_PORT,ADD_BIT0_PIN)==0) sw_add[0] = 1;
 			else sw_add[0] = 0;
@@ -1221,7 +1385,7 @@ static int 	turn_off_dk1(void){
 	LEDStatus=0;
 	return 0;
 }
-static int		turn_on_dk2(void){
+static int	turn_on_dk2(void){
 	if(!LEDStatus){
 	TM_GPIO_SetPinHigh(RELAY_DK2_PORT,RELAY_DK2_PIN);
 	LEDStatus=2;
@@ -1234,31 +1398,33 @@ static int 	turn_off_dk2(void){
 	LEDStatus=0;
 	return 0;
 }
-static int		turn_off_dk3(void){
+static int	turn_off_dk3(void){
 	TM_GPIO_SetPinHigh(RELAY_DK3_PORT,RELAY_DK3_PIN);
 	return 0;
 }
 static int 	turn_on_dk3(void){
 	TM_GPIO_SetPinLow(RELAY_DK3_PORT,RELAY_DK3_PIN);
+	TM_USART_Puts(USART3,Carpull);
 	return 0;
 }
-static int		turn_off_dk4(void){
+static int	turn_off_dk4(void){
 	TM_GPIO_SetPinHigh(RELAY_DK4_PORT,RELAY_DK4_PIN);
 	return 0;
 }
 static int 	turn_on_dk4(void){
 	TM_GPIO_SetPinLow(RELAY_DK4_PORT,RELAY_DK4_PIN);
+	TM_USART_Puts(USART3,Carpush);
 	return 0;
 }
-int 	check_vip(char * name){
+static int 	check_vip(char * name){							// check IDcar
 	int i =0;
-	for(i=0;i<2;i++){
+	for(i=0;i<3;i++){
 	if(strstr(name,vip_id[i]))
 		return 1;
 	}
 	return 0;
 }
-void updatime(uint8_t h,uint8_t m,uint8_t s,uint8_t d,uint8_t mon,uint8_t year){
+static void 	updatime(uint8_t h,uint8_t m,uint8_t s,uint8_t d,uint8_t mon,uint8_t year){ // Up datetime 
 			datatime.hours = h;
 			datatime.minutes = m;
 			datatime.seconds = s;
@@ -1268,34 +1434,67 @@ void updatime(uint8_t h,uint8_t m,uint8_t s,uint8_t d,uint8_t mon,uint8_t year){
 			/* Set new time */
 			TM_RTC_SetDateTime(&datatime, TM_RTC_Format_BIN);
 }
-void Sttup(char * buffer){
-		static int i=0;
-		static const char *s2 = "-";
-		static char *token;
-		static char *buffer1;
-		buffer1=buffer;
-		token = strtok(buffer1,s2);
-					   for (i=0;i<5;i++) {
-							sprintf(str,"STT%d :%s,",i,token); 
-							printf_d(str);
-							token = strtok(NULL, s2);
-						 }
+static void 	Sttup(char * buffer){		// 
+		
+		static int i,j,k,h,l=0;
+		sscanf(buffer,"%d-%d-%d-%d-%d",&i,&j,&k,&h,&l);
+		status_sv=i;
 }
-void timeup(char * buffer){
-		static uint8_t h, m, s, d, mon, year;
-		static int i=0;
-		static const char *s2 = "-";
-		static char *token;
-		static char *buffer1;
-		buffer1=buffer;
-									sprintf(str,"test buffer time :%s",buffer); 
-							printf_d(str);
-		token = strtok(buffer1,s2);
-					   for (i=0;i<6;i++) {
-							sprintf(str,"timeup%d :%s,",i,token); 
-							printf_d(str);
-							token = strtok(NULL, s2);
-						 }
+static void 	Timeup(char * buffer){
+		static int h, m, s, d, mon, year;
+		sscanf(buffer,"%d-%d-%d/%d-%d-%d",&h,&m,&s,&d,&mon,&year);
 		updatime(h,m,s,d,mon,year);
+}
+uint8_t crc_26bit(uint32_t allnum_bit,uint32_t wiegand){
+	uint32_t wiegand1_tam = 0;
+	uint32_t a = 0, b = 0;
+	uint32_t icount = 0;
+	
+	if((wiegand & 0xFC000000) != 0)
+		return 0;
+	if(allnum_bit != 26)
+		return 0;
+	wiegand1_tam = wiegand;
+	for(icount = 1;icount <= 12;icount++){
+		if((wiegand1_tam >>= 1)& 1)
+			b++;
+	}
+	b = (b%2)?0:1;  // CRC le
+	for(icount = 1;icount <= 12;icount++){
+		if((wiegand1_tam >>= 1)& 1)
+			a++;
+	}
+	a %= 2;	        // CRC chan
+	
+	wiegand1_tam = wiegand;
+	if((a == wiegand1_tam >> 25) && (b == (wiegand1_tam & 1)))
+		return 1;
+	else
+		return 0;
+}
+uint8_t crc_34bit(uint32_t allnum_bit,uint64_t wiegand){
+	uint64_t wiegand1_tam = 0;
+	uint32_t a = 0, b = 0;
+	uint32_t icount = 0;
+	
+	if(allnum_bit != 34)
+		return 0;
+	wiegand1_tam = wiegand;
+	for(icount = 1;icount <= 16;icount++){
+		if((wiegand1_tam >>= 1)& 1)
+			b++;
+	}
+	b = (b%2)?0:1;  // CRC le
+	for(icount = 1;icount <= 16;icount++){
+		if((wiegand1_tam >>= 1)& 1)
+			a++;
+	}
+	a %= 2;	        // CRC chan
+	
+	wiegand1_tam = wiegand;
+	if((a == wiegand1_tam >> 33) && (b == (wiegand1_tam & 1)))
+		return 1;
+	else
+		return 0;
 }
 

@@ -135,11 +135,15 @@
 #define W1_D0_PIN							GPIO_PIN_3
 #define W1_D1_PORT 						GPIOA
 #define W1_D1_PIN							GPIO_PIN_4
+
 #define W2_D0_PORT 						GPIOA
-#define W2_D0_PIN							GPIO_PIN_6
+#define W2_D0_PIN							GPIO_PIN_5
 #define W2_D1_PORT 						GPIOA
-#define W2_D1_PIN							GPIO_PIN_8
+#define W2_D1_PIN							GPIO_PIN_6
 #endif
+/*define INPUT OPT*/
+#define OPT_PORT 						GPIOA
+#define OPT_PIN							GPIO_PIN_8
 /*define 485 DIR*/
 #define CCU_DIR_PORT 					GPIOA
 #define CCU_DIR_PIN						GPIO_PIN_11
