@@ -47,30 +47,30 @@
 
 #define LINK_TIMER_INTERVAL 1000
 
-/* In case you want to use custom IP, use parameter in init function */
-#ifndef IP_ADDR0
-#define IP_ADDR0							192
-#define IP_ADDR1							168
-#define IP_ADDR2							1
-#define IP_ADDR3							120
-#endif
+///* In case you want to use custom IP, use parameter in init function */
+//#ifndef IP_ADDR0
+//#define IP_ADDR0							192
+//#define IP_ADDR1							168
+//#define IP_ADDR2							1
+//#define IP_ADDR3							120
+//#endif
 /* NETMASK */
 /* In case you want to use custom netmask, use parameter in init function */
-#ifndef NETMASK_ADDR0
-#define NETMASK_ADDR0						255
-#define NETMASK_ADDR1						255
-#define NETMASK_ADDR2						255
-#define NETMASK_ADDR3						0
-#endif
+//#ifndef NETMASK_ADDR0
+//#define NETMASK_ADDR0						255
+//#define NETMASK_ADDR1						255
+//#define NETMASK_ADDR2						255
+//#define NETMASK_ADDR3						0
+//#endif
 
-/* Gateway Address */
-/* In case you want to use custom gateway, use parameter in init function */
-#ifndef GW_ADDR0
-#define GW_ADDR0							192
-#define GW_ADDR1							168
-#define GW_ADDR2							1
-#define GW_ADDR3							1
-#endif
+///* Gateway Address */
+///* In case you want to use custom gateway, use parameter in init function */
+//#ifndef GW_ADDR0
+//#define GW_ADDR0							192
+//#define GW_ADDR1							168
+//#define GW_ADDR2							1
+//#define GW_ADDR3							1
+//#endif
 
 
 /* If you need to change settings for your SPI, then uncomment lines you want to change */
@@ -142,8 +142,8 @@
 #define W2_D1_PIN							GPIO_PIN_6
 #endif
 /*define INPUT OPT*/
-#define OPT_PORT 						GPIOA
-#define OPT_PIN							GPIO_PIN_8
+#define OPT_PORT 							GPIOA
+#define OPT_PIN								GPIO_PIN_8
 /*define 485 DIR*/
 #define CCU_DIR_PORT 					GPIOA
 #define CCU_DIR_PIN						GPIO_PIN_11
